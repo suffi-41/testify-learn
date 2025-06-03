@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/firebase_service.dart';
+
+// redux
+import 'package:flutter_redux/flutter_redux.dart';
+import '../../redux/actions/auth_actions.dart';
+import '../../models/root_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,47 +18,45 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   double _opacity = 0.0;
+  Timer? _timer;
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
 
-    // Fade-in animation
     Future.delayed(const Duration(milliseconds: 200), () {
-      setState(() {
-        _opacity = 1.0;
-      });
+      if (mounted) setState(() => _opacity = 1.0);
     });
 
-    // Check auth state
-    FirebaseAuth.instance.authStateChanges().listen((User? user) async {
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('teachers')
-            .doc(user.uid)
-            .get();
+    final store = StoreProvider.of<RootState>(context, listen: false);
 
-        if (doc.exists) {
-          final data = doc.data();
-          final role = data?['role'];
-          if (role == "teacher") {
-            context.replace("/teacher-dashboard");
-          } else {
-            context.replace("/home");
-          }
-        } else {
-          // No doc found → likely new user
-          Timer(const Duration(seconds: 2), () {
-            context.go("/login");
-          });
-        }
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      User? user,
+    ) async {
+      if (user != null) {
+        final role = await getUserRole(user.uid.toString());
+
+        /// ✅ Dispatch LoginSuccess to Redux
+        store.dispatch(
+          AuthSuccess(user.uid, role.toString()),
+        ); // or get role from Firestore
       } else {
-        // Not logged in
-        Timer(const Duration(seconds: 2), () {
-          context.go("/login");
-        });
+        /// ✅ Dispatch LogoutAction to Redux
+        store.dispatch(LogoutRequestAction());
       }
     });
+
+    _timer?.cancel();
+    _timer = Timer(const Duration(seconds: 2), () {
+      if (mounted) context.go("/");
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -70,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Container(
               padding: const EdgeInsets.all(24),
               child: Image.asset(
-                "assets/images/app_logo.jpg", // Replace with your logo path
+                "assets/images/app_logo.jpg",
                 width: 120,
                 height: 120,
               ),

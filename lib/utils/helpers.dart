@@ -86,7 +86,7 @@ class UiHelpers {
   static Widget customButton(
     BuildContext context,
     String label,
-    VoidCallback onPressed,
+    VoidCallback? onPressed,
   ) {
     return Center(
       child: SizedBox(
@@ -151,5 +151,23 @@ class UiHelpers {
       centerTitle: false,
       actions: actions,
     );
+  }
+
+  static void showSnackbar(
+    BuildContext context,
+    String message, {
+    Color? backgroundColor,
+  }) {
+    final snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: backgroundColor ?? Colors.redAccent,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      duration: const Duration(seconds: 3),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snackBar);
   }
 }

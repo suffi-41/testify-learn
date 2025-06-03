@@ -1,13 +1,16 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../utils/helpers.dart';
 import '../../../utils/responsive.dart';
 import '../../../widgets/picker_images.dart';
 import '../../../utils/cloudinary.dart';
+
+// redux
+import 'package:flutter_redux/flutter_redux.dart';
+import '../../../redux/actions/auth_actions.dart';
+import '../../../models/root_state.dart';
 
 class TeacherSignup extends StatefulWidget {
   const TeacherSignup({super.key});
@@ -48,7 +51,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace("/teacher-login");
+        context.replace("/login");
       }),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -145,76 +148,63 @@ class _TeacherSignupState extends State<TeacherSignup> {
             ),
           ),
           const SizedBox(height: 40),
+          // Inside the Submit button
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : UiHelpers.customButton(context, "Submit", () async {
                   if (_formKey.currentState!.validate()) {
+                    if (teacherImageUrl == null || coachingImageUrl == null) {
+                      UiHelpers.showSnackbar(
+                        context,
+                        "Please upload both images.",
+                      );
+                      return;
+                    }
+
                     setState(() {
                       _isLoading = true;
                     });
-                    try {
-                      final credential = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
-                            email: emailController.text.trim(),
-                            password: passwordController.text.trim(),
-                          );
-                      await credential.user!.sendEmailVerification();
-                      await FirebaseFirestore.instance
-                          .collection('teachers')
-                          .doc(credential.user!.uid)
-                          .set({
-                            'uid': credential.user!.uid,
-                            'role':"teacher",
-                            'fullName': fullNameController.text.trim(),
-                            'email': emailController.text.trim(),
-                            'phone': phoneController.text.trim(),
-                            'teacherImageUrl': teacherImageUrl,
-                            'coachingName': coachingNameController.text.trim(),
-                            'coachingAddress': coachingAddressController.text
-                                .trim(),
-                            'coachingImageUrl': coachingImageUrl,
-                            'isApproved': false,
 
-                            'createdAt': Timestamp.now(),
+                    final String email = emailController.text.trim();
+                    final String password = passwordController.text.trim();
+                    final String name = fullNameController.text.trim();
+                    final String phone = phoneController.text.trim();
+                    final String coachingName = coachingNameController.text
+                        .trim();
+                    final String coachingAddress = coachingAddressController
+                        .text
+                        .trim();
+
+                    final store = StoreProvider.of<RootState>(context);
+
+                    store.dispatch(
+                      StartTeacherSignup(
+                        email: email,
+                        password: password,
+                        fullName: name,
+                        phone: phone,
+                        coachingName: coachingName,
+                        coachingAddress: coachingAddress,
+                        teacherImageUrl: teacherImageUrl!,
+                        coachingImageUrl: coachingImageUrl!,
+                        onSuccess: () {
+                          setState(() {
+                            _isLoading = false;
                           });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Verification email sent. Please check your inbox.",
-                          ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-
-                      context.go('/verify-email');
-                    } on FirebaseAuthException catch (e) {
-                      String message = "Account creation failed";
-                      if (e.code == 'email-already-in-use') {
-                        message = "Email already in use.";
-                      } else if (e.code == 'weak-password') {
-                        message = "Password is too weak.";
-                      } else if (e.code == 'invalid-email') {
-                        message = "Invalid email format.";
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Something went wrong."),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } finally {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                    }
+                          UiHelpers.showSnackbar(context, "Signup successful", backgroundColor: Theme.of(context).colorScheme.secondary);
+                          context.go("/verify-email");
+                        },
+                        onFailure: (error) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          UiHelpers.showSnackbar(
+                            context,
+                            "Signup failed: $error",
+                          );
+                        },
+                      ),
+                    );
                   }
                 }),
 
@@ -312,7 +302,10 @@ class _TeacherSignupState extends State<TeacherSignup> {
             setState(() {
               isUploadingTeacherImage = true;
             });
-            final url = await uploadImageToCloudinary(file);
+            final url = await uploadImageToCloudinary(
+              file,
+              folderName: "testify_learn/images",
+            );
             log(url.toString());
             if (url != null) {
               setState(() {
@@ -332,7 +325,10 @@ class _TeacherSignupState extends State<TeacherSignup> {
             setState(() {
               isUploadingCoachingImage = true;
             });
-            final url = await uploadImageToCloudinary(file);
+            final url = await uploadImageToCloudinary(
+              file,
+              folderName: "testify_learn/images",
+            );
             if (url != null) {
               setState(() {
                 coachingImageUrl = url;

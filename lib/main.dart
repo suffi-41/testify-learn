@@ -1,11 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:firebase_core/firebase_core.dart';
-import "./routes/app_router.dart";
+
+// Store and models
+import './redux/store/store.dart';
+import './models/root_state.dart';
+
+// Routes and Theme
+import './routes/app_router.dart';
 import './theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
@@ -22,21 +30,25 @@ void main() async {
     await Firebase.initializeApp();
   }
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
 
-  // This widget is the root of your application.
+  final router = AppRouter.createRouter(appStore);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      routerConfig: AppRouter.goRouter,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      debugShowCheckedModeBanner: false,
+    return StoreProvider<RootState>(
+      store: appStore,
+      child: MaterialApp.router(
+        routerConfig: router,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

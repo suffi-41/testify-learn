@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/helpers.dart';
 import "../../utils/responsive.dart";
+import '../../redux/actions/auth_actions.dart';
+import '../../models/root_state.dart';
+import 'package:redux/redux.dart';
+import "../../models/view_mode.dart";
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,36 +18,71 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreen extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
-  bool _isLoading = false;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: UiHelpers.customAuthAppBar(context, "Get start", () {
-        context.replace("/role");
-      }),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: ResponsiveLayout(
-                mobile: _form(),
-                tablet: Center(child: SizedBox(width: 500, child: _form())),
-                desktop: Center(child: SizedBox(width: 500, child: _form())),
-              ),
-            ),
-          ),
-        ],
-      ),
+  void _handleLogin(Store<RootState> store) {
+    if (!_formKey.currentState!.validate()) return;
+    store.dispatch(
+      StartLogin(emailController.text.trim(), passwordController.text.trim()),
     );
   }
 
-  Widget _form() {
+  void _handleGoogleLogin(Store<RootState> store) {
+    store.dispatch(StartGoogleSignIn());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StoreConnector<RootState, LoginViewModel>(
+      converter: (store) => LoginViewModel.fromStore(store),
+      builder: (context, vm) {
+        // Redirect after login success
+        if (vm.role != null && !vm.isLoading) {
+          Future.microtask(() {
+            if (vm.role == 'student') {
+              context.go('/student-dashboard');
+            } else if (vm.role == 'teacher') {
+              context.go('/teacher-dashboard');
+            } else {
+              context.go('/login');
+            }
+          });
+        }
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          appBar: UiHelpers.customAuthAppBar(context, "Get Started", () {
+            context.replace("/role");
+          }),
+          body: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  child: ResponsiveLayout(
+                    mobile: _form(vm),
+                    tablet: Center(
+                      child: SizedBox(width: 500, child: _form(vm)),
+                    ),
+                    desktop: Center(
+                      child: SizedBox(width: 500, child: _form(vm)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _form(LoginViewModel vm) {
+    final store = StoreProvider.of<RootState>(context);
     return Form(
       key: _formKey,
       child: Column(
@@ -91,9 +130,8 @@ class _LoginScreen extends State<LoginScreen> {
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
               ),
-              onPressed: () {
-                setState(() => _obscurePassword = !_obscurePassword);
-              },
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Password is required';
@@ -104,19 +142,27 @@ class _LoginScreen extends State<LoginScreen> {
           ),
 
           const SizedBox(height: 24),
-
-          _isLoading
+          vm.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : UiHelpers.customButton(context, "Sign In", () {
-                  if (!_isLoading) _handleLogin();
-                }),
+              : UiHelpers.customButton(
+                  context,
+                  "Sign In",
+                  () => _handleLogin(store),
+                ),
+
+          if (vm.errorMessage != null && vm.errorMessage!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                vm.errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
 
           const SizedBox(height: 12),
           Center(
             child: TextButton(
-              onPressed: () {
-                context.push("/reset-password");
-              },
+              onPressed: () => context.push("/reset-password"),
               child: const Text("Forgot your password?"),
             ),
           ),
@@ -137,8 +183,9 @@ class _LoginScreen extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSocialButton("Google", "assets/images/google.jpg"),
-              _buildSocialButton("Facebook", "assets/images/facebook.png"),
+              _buildSocialButton("Google", "assets/images/google.jpg", () {
+                _handleGoogleLogin(store);
+              }),
             ],
           ),
         ],
@@ -146,11 +193,13 @@ class _LoginScreen extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(String label, String assetPath) {
+  Widget _buildSocialButton(
+    String label,
+    String assetPath,
+    VoidCallback? onPressed,
+  ) {
     return ElevatedButton.icon(
-      onPressed: () {
-        // TODO: Implement social login
-      },
+      onPressed: onPressed,
       icon: Image.asset(assetPath, height: 24),
       label: Text(label),
       style: ElevatedButton.styleFrom(
@@ -161,55 +210,5 @@ class _LoginScreen extends State<LoginScreen> {
         elevation: 0,
       ),
     );
-  }
-
-  // login or sign In function
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-
-      if (!credential.user!.emailVerified) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Please verify your email before logging in."),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Login successful!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.go('/home'); // Navigate after login
-      }
-    } on FirebaseAuthException catch (e) {
-      String msg = "Login failed";
-      if (e.code == 'user-not-found') {
-        msg = "No user found with this email.";
-      } else if (e.code == 'wrong-password') {
-        msg = "Incorrect password.";
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Something went wrong."),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
   }
 }

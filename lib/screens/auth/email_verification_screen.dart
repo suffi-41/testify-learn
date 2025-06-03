@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../services/firebase_service.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -28,24 +29,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     _startAutoCheckVerification();
   }
 
-  Future<String?> getUserRole() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('teachers')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists) {
-        final data = doc.data();
-        return data?['role']; // Returns the user's role, e.g., "student", "teacher"
-      }
-    }
-    return null; // User not found or no role field
-  }
-
   Future<void> _checkEmailVerified() async {
+    final user = FirebaseAuth.instance.currentUser;
     await _auth.currentUser?.reload();
     final isVerified = _auth.currentUser?.emailVerified ?? false;
 
@@ -54,11 +39,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         _isEmailVerified = true;
       });
       _checkTimer?.cancel();
-      final role = await getUserRole();
+      final role = await getUserRole(user!.uid);
       if (role == "teacher") {
         context.replace("/approval");
       } else {
-        context.replace("/home");
+        context.replace("/student-dashboard");
       }
     }
   }

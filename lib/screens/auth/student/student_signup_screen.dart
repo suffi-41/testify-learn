@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../utils/helpers.dart';
 import "../../../utils/responsive.dart";
+
+// redux
+import 'package:flutter_redux/flutter_redux.dart';
+import '../../../redux/actions/auth_actions.dart';
+import '../../../models/root_state.dart';
 
 class StudentSignup extends StatefulWidget {
   const StudentSignup({super.key});
@@ -29,7 +32,7 @@ class _StudentSignupState extends State<StudentSignup> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace("/student-login");
+        context.replace("/login");
       }),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -128,62 +131,38 @@ class _StudentSignupState extends State<StudentSignup> {
                     setState(() {
                       _isLoading = true;
                     });
-                    try {
-                      final credential = await FirebaseAuth.instance
-                          .createUserWithEmailAndPassword(
-                            email: emailController.text.trim(),
-                            password: passwordController.text.trim(),
-                          );
-                      await credential.user!.sendEmailVerification();
-                      await FirebaseFirestore.instance
-                          .collection('students')
-                          .doc(credential.user!.uid)
-                          .set({
-                            'uid': credential.user!.uid,
-                            'role': "student",
-                            'fullName': fullNameController.text.trim(),
-                            'email': emailController.text.trim(),
-                            'phone': phoneController.text.trim(),
-                            'createdAt': Timestamp.now(),
+
+                    final String email = emailController.text.trim();
+                    final String password = passwordController.text.trim();
+                    final String name = fullNameController.text.trim();
+                    final String phone = phoneController.text.trim();
+
+                    final store = StoreProvider.of<RootState>(context);
+
+                    store.dispatch(
+                      StartStudentSignup(
+                        email: email,
+                        password: password,
+                        fullName: name,
+                        phone: phone,
+                        onSuccess: () {
+                          setState(() {
+                            _isLoading = false;
                           });
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Verification email sent. Please check your inbox.",
-                          ),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-
-                      context.go('/verify-email');
-                    } on FirebaseAuthException catch (e) {
-                      String message = "Account creation failed";
-                      if (e.code == 'email-already-in-use') {
-                        message = "Email already in use.";
-                      } else if (e.code == 'weak-password') {
-                        message = "Password is too weak.";
-                      } else if (e.code == 'invalid-email') {
-                        message = "Invalid email format.";
-                      }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(message),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Something went wrong."),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } finally {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                    }
+                          UiHelpers.showSnackbar(context, "Signup successful",backgroundColor: Theme.of(context).colorScheme.secondary);
+                          context.go("/verify-email");
+                        },
+                        onFailure: (error) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          UiHelpers.showSnackbar(
+                            context,
+                            "Signup failed: $error",
+                          );
+                        },
+                      ),
+                    );
                   }
                 }),
 
