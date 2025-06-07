@@ -2,6 +2,9 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+// routes name
+import '../../../constants/app_routes.dart';
+
 import '../../../utils/helpers.dart';
 import '../../../utils/responsive.dart';
 import '../../../widgets/picker_images.dart';
@@ -51,7 +54,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace("/login");
+        context.replace(AppRoutes.login);
       }),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -146,6 +149,38 @@ class _TeacherSignupState extends State<TeacherSignup> {
                 ),
               ),
             ),
+            largeDesttop: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          UiHelpers.sectionTitle("Teacher Details"),
+                          const SizedBox(height: 12),
+                          _teacherDetails(),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          UiHelpers.sectionTitle("Coaching Details"),
+                          const SizedBox(height: 12),
+                          _coachingDetails(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 40),
           // Inside the Submit button
@@ -191,8 +226,14 @@ class _TeacherSignupState extends State<TeacherSignup> {
                           setState(() {
                             _isLoading = false;
                           });
-                          UiHelpers.showSnackbar(context, "Signup successful", backgroundColor: Theme.of(context).colorScheme.secondary);
-                          context.go("/verify-email");
+                          UiHelpers.showSnackbar(
+                            context,
+                            "Signup successful",
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondary,
+                          );
+                          context.go(AppRoutes.emailVerification);
                         },
                         onFailure: (error) {
                           setState(() {

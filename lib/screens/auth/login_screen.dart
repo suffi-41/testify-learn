@@ -8,6 +8,9 @@ import '../../models/root_state.dart';
 import 'package:redux/redux.dart';
 import "../../models/view_mode.dart";
 
+// routes name
+import '../../constants/app_routes.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,19 +44,18 @@ class _LoginScreen extends State<LoginScreen> {
         if (vm.role != null && !vm.isLoading) {
           Future.microtask(() {
             if (vm.role == 'student') {
-              context.go('/student-dashboard');
+              context.go(AppRoutes.studentDashboard);
             } else if (vm.role == 'teacher') {
-              context.go('/teacher-dashboard');
+              context.go(AppRoutes.tacherDashboard);
             } else {
-              context.go('/login');
+              context.go(AppRoutes.login);
             }
           });
         }
 
         return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: UiHelpers.customAuthAppBar(context, "Get Started", () {
-            context.replace("/role");
+            context.replace(AppRoutes.role);
           }),
           body: Column(
             children: [
@@ -71,6 +73,10 @@ class _LoginScreen extends State<LoginScreen> {
                     desktop: Center(
                       child: SizedBox(width: 500, child: _form(vm)),
                     ),
+                    largeDesttop: Center(
+                      child: SizedBox(width: 500, child: _form(vm)),
+                    ),
+                    
                   ),
                 ),
               ),
@@ -162,7 +168,7 @@ class _LoginScreen extends State<LoginScreen> {
           const SizedBox(height: 12),
           Center(
             child: TextButton(
-              onPressed: () => context.push("/reset-password"),
+              onPressed: () => context.push(AppRoutes.resetPassword),
               child: const Text("Forgot your password?"),
             ),
           ),

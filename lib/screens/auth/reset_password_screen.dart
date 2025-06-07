@@ -57,7 +57,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: UiHelpers.customAuthAppBar(context, "Back ", () {
         // Example: navigate back or to another screen
         context.pop();
@@ -72,6 +71,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 mobile: _form(),
                 tablet: Center(child: SizedBox(width: 500, child: _form())),
                 desktop: Center(child: SizedBox(width: 500, child: _form())),
+                largeDesttop: Center(child: SizedBox(width: 500, child: _form())),
               ),
             ),
           ),

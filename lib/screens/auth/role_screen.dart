@@ -3,13 +3,16 @@ import 'package:go_router/go_router.dart';
 import 'package:testify_learn_application/utils/helpers.dart';
 import "../../utils/responsive.dart";
 
+// routes name
+import '../../constants/app_routes.dart';
+
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+     
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -37,7 +40,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         context,
                         imagePath: "assets/images/student.png",
                         label: "I'm a Student",
-                        onPressed: () => context.push('/student-signup'),
+                        onPressed: () => context.push(AppRoutes.studentSingup),
                       ),
                       const SizedBox(height: 24),
 
@@ -45,7 +48,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         context,
                         imagePath: "assets/images/teacher.png",
                         label: "I'm a Teacher",
-                        onPressed: () => context.push('/teacher-signup'),
+                        onPressed: () => context.push(AppRoutes.teacherSignup),
                       ),
                     ],
                   ),
@@ -56,7 +59,8 @@ class RoleSelectionScreen extends StatelessWidget {
                           context,
                           imagePath: "assets/images/student.png",
                           label: "I'm a Student",
-                          onPressed: () => context.push('/student-signup'),
+                          onPressed: () =>
+                              context.push(AppRoutes.studentSingup),
                         ),
                         const SizedBox(height: 24),
 
@@ -64,7 +68,8 @@ class RoleSelectionScreen extends StatelessWidget {
                           context,
                           imagePath: "assets/images/teacher.png",
                           label: "I'm a Teacher",
-                          onPressed: () => context.push('/teacher-signup'),
+                          onPressed: () =>
+                              context.push(AppRoutes.teacherSignup),
                         ),
                       ],
                     ),
@@ -76,7 +81,8 @@ class RoleSelectionScreen extends StatelessWidget {
                           context,
                           imagePath: "assets/images/student.png",
                           label: "I'm a Student",
-                          onPressed: () => context.push('/student-signup'),
+                          onPressed: () =>
+                              context.push(AppRoutes.studentSingup),
                         ),
                         const SizedBox(height: 24),
 
@@ -84,8 +90,33 @@ class RoleSelectionScreen extends StatelessWidget {
                           context,
                           imagePath: "assets/images/teacher.png",
                           label: "I'm a Teacher",
-                          onPressed: () => context.push('/teacher-signup'),
+                          onPressed: () =>
+                              context.push(AppRoutes.teacherSignup),
                         ),
+
+                      ],
+                    ),
+                  ),
+                  largeDesttop: Expanded(
+                    child: Row(
+                      children: [
+                        _buildRoleCard(
+                          context,
+                          imagePath: "assets/images/student.png",
+                          label: "I'm a Student",
+                          onPressed: () =>
+                              context.push(AppRoutes.studentSingup),
+                        ),
+                        const SizedBox(height: 24),
+
+                        _buildRoleCard(
+                          context,
+                          imagePath: "assets/images/teacher.png",
+                          label: "I'm a Teacher",
+                          onPressed: () =>
+                              context.push(AppRoutes.teacherSignup),
+                        ),
+
                       ],
                     ),
                   ),

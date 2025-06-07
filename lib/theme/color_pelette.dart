@@ -2,9 +2,21 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary Colors (Brand)
-  static const Color primary = Color(0xFF4361EE); // Vibrant blue
+  static const Color primary = Colors.deepPurple; // Vibrant blue
   static const Color primaryDark = Color(0xFF3A56E0);
   static const Color primaryLight = Color(0xFF5F7BFF);
+  static const Color iconsPrimary = Colors.white;
+  static const Color primarydark = Color.fromARGB(255, 17, 17, 17);
+
+  // card color
+  static const Color primaryCard = Color(0xFF5F7BFF);
+  static const Color secondaryCard = Color(0xFF06D6A0);
+  static const Color tertiaryCard = Color(0xFFF44336);
+
+  // comman colors
+  static const Color primaryComman = Color.fromARGB(255, 136, 146, 195);
+  static const Color secondaryComman = Color.fromARGB(255, 150, 210, 194);
+  static const Color tertiaryComman = Color.fromARGB(255, 202, 137, 133);
 
   // input text field color
 

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../utils/helpers.dart';
 import "../../../utils/responsive.dart";
 
+// routes name
+import "../../../constants/app_routes.dart";
+
 // redux
 import 'package:flutter_redux/flutter_redux.dart';
 import '../../../redux/actions/auth_actions.dart';
@@ -30,9 +33,8 @@ class _StudentSignupState extends State<StudentSignup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: UiHelpers.customAuthAppBar(context, "Sign In", () {
-        context.replace("/login");
+        context.replace(AppRoutes.login);
       }),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -42,6 +44,9 @@ class _StudentSignupState extends State<StudentSignup> {
             child: SizedBox(width: 500, child: _buildSignupForm()),
           ),
           desktop: Center(
+            child: SizedBox(width: 500, child: _buildSignupForm()),
+          ),
+          largeDesttop: Center(
             child: SizedBox(width: 500, child: _buildSignupForm()),
           ),
         ),
@@ -149,8 +154,14 @@ class _StudentSignupState extends State<StudentSignup> {
                           setState(() {
                             _isLoading = false;
                           });
-                          UiHelpers.showSnackbar(context, "Signup successful",backgroundColor: Theme.of(context).colorScheme.secondary);
-                          context.go("/verify-email");
+                          UiHelpers.showSnackbar(
+                            context,
+                            "Signup successful",
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondary,
+                          );
+                          context.go(AppRoutes.emailVerification);
                         },
                         onFailure: (error) {
                           setState(() {

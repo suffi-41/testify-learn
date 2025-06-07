@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/firebase_service.dart';
+
+// routes name 
+import '../../constants/app_routes.dart';
+
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -41,9 +44,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       _checkTimer?.cancel();
       final role = await getUserRole(user!.uid);
       if (role == "teacher") {
-        context.replace("/approval");
+        context.replace(AppRoutes.approval);
       } else {
-        context.replace("/student-dashboard");
+        context.replace(AppRoutes.studentDashboard);
       }
     }
   }
@@ -97,7 +100,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     final userEmail = _auth.currentUser?.email ?? "your email";
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

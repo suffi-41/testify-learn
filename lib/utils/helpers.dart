@@ -119,6 +119,7 @@ class UiHelpers {
   }
 
   static AppBar customAppBarForScreen(
+    context,
     String title, {
     bool automaticallyImplyLeading = false,
     List<Widget>? actions,
@@ -126,17 +127,9 @@ class UiHelpers {
     return AppBar(
       automaticallyImplyLeading: automaticallyImplyLeading,
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       iconTheme: const IconThemeData(color: Colors.white),
-      flexibleSpace: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A5AE0), Color(0xFF886AE2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
+
       title: Padding(
         padding: const EdgeInsets.only(left: 10),
         child: Text(
@@ -170,4 +163,6 @@ class UiHelpers {
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
   }
+
+
 }

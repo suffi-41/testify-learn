@@ -1,3 +1,4 @@
+// 1. Import the extension
 import 'package:flutter/material.dart';
 import './color_pelette.dart';
 import './text_theme.dart';
@@ -5,6 +6,7 @@ import './text_theme.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
+      scaffoldBackgroundColor: AppColors.background,
       useMaterial3: true,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
@@ -13,7 +15,7 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: AppTextTheme.lightTextTheme,
-      scaffoldBackgroundColor: AppColors.background,
+
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         elevation: 1,
@@ -29,7 +31,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryLight,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
@@ -71,15 +73,16 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     return ThemeData(
+      scaffoldBackgroundColor: const Color(0xFF121212),
       useMaterial3: true,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primaryLight,
+        primary: AppColors.primarydark,
         secondary: AppColors.secondaryLight,
         surface: Color(0xFF1E1E1E),
         error: AppColors.error,
       ),
       textTheme: AppTextTheme.darkTextTheme,
-      scaffoldBackgroundColor: const Color(0xFF121212),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondaryDark,
@@ -93,10 +96,8 @@ class AppTheme {
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white70),
       ),
-
       cardTheme: const CardThemeData(
         color: AppColors.secondaryDark,
-
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
