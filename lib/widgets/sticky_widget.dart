@@ -29,7 +29,14 @@ class _StickyHeader extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return child;
+    return SizedBox(
+      height: maxExtent,
+      child: Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        elevation: overlapsContent ? 4 : 0,
+        child: child,
+      ),
+    );
   }
 
   @override

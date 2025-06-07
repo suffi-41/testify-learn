@@ -105,7 +105,6 @@ class AppRouter {
               path: '/student-wallet',
               builder: (_, __) => const WalletScreen(),
             ),
-           
           ],
         ),
 

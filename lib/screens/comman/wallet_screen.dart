@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../widgets/sticky_widget.dart';
 import '../../utils/helpers.dart';
+import '../../widgets/transection_tile.dart';
+import '../../widgets/payment_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -10,126 +13,111 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   int selectedFilter = 0;
-  final filters = ['All', 'Add money', 'Withdrawals', 'Test Paid', 'Rewards'];
+  final List<String> filters = [
+    'All',
+    'Add Money',
+    'Withdrawals',
+    'Test Paid',
+    'Rewards',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: UiHelpers.customAppBarForScreen(context, "Wallets"),
-      body: SafeArea(
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxScrolled) => [
-            SliverToBoxAdapter(child: _walletHeaderCard()),
+      appBar: UiHelpers.customAppBarForScreen(context, "Wallet"),
+      body: CustomScrollView(
+        slivers: [
+          // Wallet Header
+          SliverToBoxAdapter(child: _walletHeaderCard()),
 
-            // Sticky Filter Row
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyFilterHeader(child: _buildFilterChips()),
-            ),
+          // Sticky Filter Bar
+          StickyTopPositioned(child: _buildFilterChips(context)),
 
-            // Optional Title Below Filter
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+          // Transaction Title and List
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
                   "Transaction History",
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-          ],
-          body: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 16),
-            itemCount: 20,
-            itemBuilder: (context, index) {
-              return _transactionTile(
-                icon: Icons.account_balance_wallet,
-                title: "Add Money",
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => TransactionTile(
+                title: filters[selectedFilter % filters.length],
                 date: "12-06-2025",
-                amount: "+₹100",
-                status: "Successful",
-                color: Colors.green,
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _walletHeaderCard() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7B61FF), Color(0xFF9C4DFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Available Balance",
-            style: TextStyle(color: Colors.white),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "₹500",
-            style: TextStyle(
-              fontSize: 32,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+                amount: "+₹${(index + 1) * 50}",
+                status: "successful",
+              ),
+              childCount: 10,
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _walletButton("Withdraw", Icons.money_off, Colors.white),
-              const SizedBox(width: 12),
-              _walletButton("Add Money", Icons.add_card, Colors.white),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChips() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(filters.length, (index) {
-            final isSelected = selectedFilter == index;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(filters[index]),
-                selected: isSelected,
-                selectedColor: Colors.deepPurple,
-                backgroundColor: Colors.grey.shade200,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
-                ),
-                onSelected: (_) => setState(() => selectedFilter = index),
+  Widget _walletHeaderCard() {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Available Balance",
+                style: TextStyle(color: Colors.white),
               ),
-            );
-          }),
+              const SizedBox(height: 8),
+              const Text(
+                "₹500",
+                style: TextStyle(
+                  fontSize: 32,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _walletButton("Withdraw", Icons.money_off, Colors.white, () {
+                    _showWithdrawDialog(context);
+                  }),
+                  const SizedBox(width: 12),
+                  _walletButton("Add Money", Icons.add_card, Colors.white, () {
+                    _showAddMoneyDialog(context);
+                  }),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _walletButton(String label, IconData icon, Color color) {
+  Widget _walletButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return Expanded(
       child: ElevatedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, color: color),
         label: Text(label, style: TextStyle(color: color)),
         style: ElevatedButton.styleFrom(
@@ -144,77 +132,61 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _transactionTile({
-    required IconData icon,
-    required String title,
-    required String date,
-    required String amount,
-    required Color color,
-    String? status,
-  }) {
+  Widget _buildFilterChips(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.deepPurple.shade100),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors.deepPurple.shade100,
-            child: Icon(icon, color: Colors.deepPurple),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(filters.length, (index) {
+            final isSelected = selectedFilter == index;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(filters[index]),
+                selected: isSelected,
+                selectedColor: Colors.deepPurple,
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : Theme.of(context).textTheme.headlineMedium?.color,
                 ),
-                Text(date, style: const TextStyle(color: Colors.grey)),
-                if (status != null)
-                  Text(
-                    status,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-              ],
-            ),
-          ),
-          Text(
-            amount,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
-          ),
-        ],
+                onSelected: (_) => setState(() => selectedFilter = index),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
-}
 
-// Sticky Header Delegate
-class _StickyFilterHeader extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  _StickyFilterHeader({required this.child});
-
-  @override
-  double get minExtent => 60;
-  @override
-  double get maxExtent => 60;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
+  void _showAddMoneyDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => PaymentDialog(
+        title: "Add Money",
+        buttonText: "Proceed to Pay",
+        minAmount: 25,
+        onConfirm: (upi, amount) {
+          print("Add ₹$amount via $upi");
+        },
+      ),
+    );
   }
 
-  @override
-  bool shouldRebuild(covariant _StickyFilterHeader oldDelegate) {
-    return child != oldDelegate.child;
+  void _showWithdrawDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => PaymentDialog(
+        title: "Withdraw",
+        buttonText: "Request Withdrawal",
+        minAmount: 50,
+        onConfirm: (upi, amount) {
+          print("Withdraw ₹$amount to $upi");
+        },
+      ),
+    );
   }
 }
