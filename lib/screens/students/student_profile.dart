@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/responsive.dart';
 
 class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
@@ -21,96 +22,156 @@ class StudentProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Top Profile Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-              decoration: const BoxDecoration(
-                color: Colors.deepPurple,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 42,
-                              backgroundColor: Colors.deepPurple.shade300,
-                              child: const Text(
-                                'MA',
-                                style: TextStyle(fontSize: 26, color: Colors.white),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Mohd Affan',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          onPressed: () {
-                            // Edit profile action
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Personal Information Section
-            _infoSection(
-              title: 'Personal Information',
-              items: [
-                _infoItem(Icons.person, 'Name', 'Mohd Affan'),
-                _infoItem(Icons.email, 'Email', 'mdafan5454@gmail.com'),
-                _infoItem(Icons.phone, 'Phone', 'Mohd Affan'),
-                _infoItem(Icons.school, 'Coaching', 'Sufiyan coaching center'),
-                _infoItem(Icons.class_, 'Class', '12th'),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Support Section
-            _infoSection(
-              title: 'Support',
-              items: [
-                _infoItem(Icons.email_outlined, 'Email', 'testifyearnsupport@gmail.com'),
-                _infoItem(Icons.phone_android, 'Phone', '+91 7462019734'),
-                _infoItem(Icons.access_time, 'Working Hours', 'Fri - Sun, 10:00 PM - 11:30 PM'),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-          ],
+      body: ResponsiveLayout(
+        mobile: _buildProfileContent(context, false),
+        tablet: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: _buildProfileContent(context, false),
+          ),
+        ),
+        desktop: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: _buildProfileContent(context, true),
+          ),
+        ),
+        largeDesttop: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: _buildProfileContent(context, true),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildProfileContent(BuildContext context, bool isDesktop) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Top Profile Header
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              vertical: isDesktop ? 48 : 32,
+              horizontal: isDesktop ? 32 : 16,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.deepPurple,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              children: [
+                Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: isDesktop ? 60 : 42,
+                            backgroundColor: Colors.deepPurple.shade300,
+                            child: Text(
+                              'MA',
+                              style: TextStyle(
+                                fontSize: isDesktop ? 32 : 26,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Mohd Affan',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: () {
+                          // Edit profile action
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          if (isDesktop)
+            // Desktop layout - side by side sections
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _infoSection(
+                      title: 'Personal Information',
+                      items: _personalInfoItems,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _infoSection(
+                      title: 'Support',
+                      items: _supportInfoItems,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Mobile/Tablet layout - stacked sections
+            Column(
+              children: [
+                _infoSection(
+                  title: 'Personal Information',
+                  items: _personalInfoItems,
+                ),
+                const SizedBox(height: 20),
+                _infoSection(title: 'Support', items: _supportInfoItems),
+              ],
+            ),
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> get _personalInfoItems => [
+    _infoItem(Icons.person, 'Name', 'Mohd Affan'),
+    _infoItem(Icons.email, 'Email', 'mdafan5454@gmail.com'),
+    _infoItem(Icons.phone, 'Phone', '+91 1234567890'),
+    _infoItem(Icons.school, 'Coaching', 'Sufiyan coaching center'),
+    _infoItem(Icons.class_, 'Class', '12th'),
+  ];
+
+  List<Widget> get _supportInfoItems => [
+    _infoItem(Icons.email_outlined, 'Email', 'testifyearnsupport@gmail.com'),
+    _infoItem(Icons.phone_android, 'Phone', '+91 7462019734'),
+    _infoItem(
+      Icons.access_time,
+      'Working Hours',
+      'Fri - Sun, 10:00 PM - 11:30 PM',
+    ),
+  ];
 
   Widget _infoSection({required String title, required List<Widget> items}) {
     return Container(
@@ -124,7 +185,10 @@ class StudentProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 12),
           ...items,
         ],
@@ -144,8 +208,17 @@ class StudentProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),

@@ -42,7 +42,10 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.deepPurple.shade400, Colors.deepPurple.shade700],
+                  colors: [
+                    Colors.deepPurple.shade400,
+                    Colors.deepPurple.shade700,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -56,7 +59,7 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
                     color: Colors.black26,
                     blurRadius: 8,
                     offset: Offset(0, 4),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -76,11 +79,17 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
                     children: const [
                       Icon(Icons.list_alt, color: Colors.white, size: 20),
                       SizedBox(width: 6),
-                      Text("Questions: 2/30", style: TextStyle(color: Colors.white)),
+                      Text(
+                        "Questions: 2/30",
+                        style: TextStyle(color: Colors.white),
+                      ),
                       SizedBox(width: 12),
                       Icon(Icons.access_time, color: Colors.white, size: 20),
                       SizedBox(width: 6),
-                      Text("Time: 60 min", style: TextStyle(color: Colors.white)),
+                      Text(
+                        "Time: 60 min",
+                        style: TextStyle(color: Colors.white),
+                      ),
                       SizedBox(width: 12),
                       Icon(Icons.star, color: Colors.white, size: 20),
                       SizedBox(width: 6),
@@ -89,7 +98,10 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
@@ -99,11 +111,16 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
                       children: const [
                         Icon(Icons.timer, color: Colors.deepPurple, size: 18),
                         SizedBox(width: 6),
-                        Text("Time Taken: 40 min 35 sec",
-                            style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600)),
+                        Text(
+                          "Time Taken: 40 min 35 sec",
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -135,7 +152,8 @@ class _TakenTestReviewScreenState extends State<TakenTestReviewScreen> {
                 controller: _pageController,
                 itemCount: questions.length,
                 physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) => _buildQuestionCard(questions[index]),
+                itemBuilder: (context, index) =>
+                    _buildQuestionCard(questions[index]),
               ),
             ),
 

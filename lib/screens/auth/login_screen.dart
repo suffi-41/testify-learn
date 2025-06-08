@@ -76,7 +76,6 @@ class _LoginScreen extends State<LoginScreen> {
                     largeDesttop: Center(
                       child: SizedBox(width: 500, child: _form(vm)),
                     ),
-                    
                   ),
                 ),
               ),
