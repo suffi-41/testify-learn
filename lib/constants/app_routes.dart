@@ -11,6 +11,9 @@ class AppRoutes {
   static const approval = '/approval';
   static const resetPassword = '/reset-password';
 
+  // comman routes
+  static const notifications = '/settings';
+
   // Studnets routes name
   static const studentDashboard = '/student-dashboard';
   static const String coachingCode = '/coaching-code';

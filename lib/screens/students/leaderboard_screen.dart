@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../utils/responsive.dart'; // your responsive layout utility
+import '../../utils/responsive.dart';
 import '../../utils/helpers.dart';
-import '../../widgets/text_card.dart';
+import '../../widgets/score_tile.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -20,25 +20,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     "English Grammar (XII)",
   ];
 
+  final Map<String, Map<String, String>> testDetails = {
+    "Mathematics Test (X)": {"date": "12-06-2025", "time": "4:30 PM"},
+    "Science Quiz (XI)": {"date": "15-06-2025", "time": "2:00 PM"},
+    "History Test (IX)": {"date": "18-06-2025", "time": "10:00 AM"},
+    "English Grammar (XII)": {"date": "20-06-2025", "time": "1:00 PM"},
+  };
+
   final Map<String, List<Map<String, dynamic>>> testLeaderboards = {
-    "Mathematics Test (X)": [
-      {
-        'rank': 1,
-        'name': 'Mohd Affan',
+    "Mathematics Test (X)": List.generate(6, (index) {
+      return {
+        'rank': index + 1,
+        'name': index == 0 ? 'Mohd Affan' : 'Sara Zain',
         'subject': 'Math',
-        'score': 500,
-        'time': '5 min 30 sec',
-        'reward': 250,
-      },
-      {
-        'rank': 2,
-        'name': 'Sara Zain',
-        'subject': 'Math',
-        'score': 470,
-        'time': '6 min 12 sec',
-        'reward': 200,
-      },
-    ],
+        'score': 500 - (index * 10),
+        'time': '5 min ${30 + index} sec',
+        'reward': 250 - (index * 10),
+      };
+    }),
     "Science Quiz (XI)": [
       {
         'rank': 1,
@@ -82,17 +81,37 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                dropdownColor: Theme.of(context).scaffoldBackgroundColor,
                 value: selectedTest,
+                dropdownColor: Theme.of(context).scaffoldBackgroundColor,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
+                selectedItemBuilder: (context) {
+                  return testOptions.map((value) {
+                    return Align(
+                      alignment: Alignment.center,
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }).toList();
+                },
                 items: testOptions.map((value) {
+                  final details =
+                      testDetails[value] ?? {"date": "-", "time": "-"};
                   return DropdownMenuItem<String>(
                     value: value,
-                    child:  TestCard(),
+                    child: SizedBox(
+                      child: Text(
+                        "$value\n${details['date']} - ${details['time']}",
+                      ),
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -144,126 +163,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ? const Center(child: Text("No data available"))
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: leaderboard.length,
-                  itemBuilder: (context, index) =>
-                      _buildLeaderboardCard(leaderboard[index]),
+                  itemCount: 20,
+                  itemBuilder: (context, index) => ScoreTile(
+                    rank: index + 1,
+                    name: 'Sufiyan',
+                    score: '95',
+                    duration: '2 min',
+                    reward: '100',
+                  ),
                 ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLeaderboardCard(Map<String, dynamic> data) {
-    final int rank = data['rank'];
-
-    Color getRankColor(int rank) {
-      switch (rank) {
-        case 1:
-          return Colors.amber;
-        case 2:
-          return Colors.grey;
-        case 3:
-          return Colors.brown;
-        default:
-          return Colors.deepPurple;
-      }
-    }
-
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: getRankColor(rank),
-              child: Text(
-                rank.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "Subject: ${data['subject']}",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.score, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text("Score: ${data['score']}"),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.monetization_on,
-                      size: 18,
-                      color: Colors.green,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "₹${data['reward']}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      data['time'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

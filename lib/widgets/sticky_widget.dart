@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 class StickyTopPositioned extends StatelessWidget {
   final Widget child;
 
@@ -24,12 +23,15 @@ class _StickyHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => 60;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox(
+      height: maxExtent,
+      child: Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        elevation: overlapsContent ? 4 : 0,
+        child: child,
+      ),
+    );
   }
 
   @override

@@ -18,6 +18,9 @@ import '../screens/teachers/dashoard_screen.dart';
 import '../screens/students/student_dashboard.dart';
 import "../screens/students/coaching_code_screen.dart";
 
+// comman screens
+import '../screens/comman/notifications_screen.dart';
+
 // 👇 Import the persistent scaffold
 import '../screens/students/student_main_scaffold.dart';
 import '../screens/students/tests_screen.dart';
@@ -127,6 +130,11 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.approval,
           builder: (_, __) => const ApprovalPage(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.notifications,
+          builder: (_, _) => NotificationScreen(),
         ),
 
         /// Student Routes with Bottom Navigation (Protected)

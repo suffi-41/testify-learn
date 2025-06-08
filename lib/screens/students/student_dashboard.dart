@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:testify_learn_application/constants/app_routes.dart';
 import 'package:testify_learn_application/theme/color_pelette.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/state_box.dart';
@@ -31,7 +33,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
         "Dashboard",
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              context.push(AppRoutes.notifications);
+            },
             icon: const Icon(
               Icons.notifications,
               color: AppColors.iconsPrimary,
