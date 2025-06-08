@@ -27,10 +27,54 @@ import '../screens/students/student_profile.dart';
 import '../screens/students/quiz_taken_screen.dart';
 
 class AppRouter {
+  static final _publicRoutes = [
+    AppRoutes.splash,
+    AppRoutes.login,
+    AppRoutes.role,
+    AppRoutes.studentSingup,
+    AppRoutes.teacherSignup,
+    AppRoutes.resetPassword,
+  ];
+
   static GoRouter createRouter(Store<RootState> store) {
+    // Redirect logic for authentication
+    String? _guardRoute(BuildContext context, GoRouterState state) {
+      final isLoggedIn = store.state.authState.uid.isNotEmpty;
+      final userRole = store.state.authState.role;
+      final isPublicRoute = _publicRoutes.contains(state.uri.path);
+
+      // Allow access to public routes even when not logged in
+      if (isPublicRoute) {
+        return null;
+      }
+
+      // If not logged in and trying to access protected route, redirect to login
+      if (!isLoggedIn) {
+        return AppRoutes.login;
+      }
+
+      // Role-based route protection
+      if (state.uri.path.startsWith('/student')) {
+        if (userRole != 'student') {
+          return userRole == 'teacher'
+              ? AppRoutes.tacherDashboard
+              : AppRoutes.login;
+        }
+      } else if (state.uri.path.startsWith('/teacher')) {
+        if (userRole != 'teacher') {
+          return userRole == 'student'
+              ? AppRoutes.studentDashboard
+              : AppRoutes.login;
+        }
+      }
+
+      return null;
+    }
+
     return GoRouter(
       initialLocation: AppRoutes.splash,
       refreshListenable: GoRouterRefreshStream(store.onChange),
+      redirect: _guardRoute,
       routes: [
         GoRoute(
           path: AppRoutes.splash,
@@ -55,6 +99,8 @@ class AppRouter {
             return AppRoutes.login;
           },
         ),
+
+        // Public routes
         GoRoute(path: AppRoutes.login, builder: (_, __) => const LoginScreen()),
         GoRoute(
           path: AppRoutes.role,
@@ -69,6 +115,12 @@ class AppRouter {
           builder: (_, __) => const TeacherSignup(),
         ),
         GoRoute(
+          path: AppRoutes.resetPassword,
+          builder: (_, __) => const ResetPasswordScreen(),
+        ),
+
+        // Protected routes that require authentication
+        GoRoute(
           path: AppRoutes.emailVerification,
           builder: (_, __) => const EmailVerificationScreen(),
         ),
@@ -76,12 +128,8 @@ class AppRouter {
           path: AppRoutes.approval,
           builder: (_, __) => const ApprovalPage(),
         ),
-        GoRoute(
-          path: AppRoutes.resetPassword,
-          builder: (_, __) => const ResetPasswordScreen(),
-        ),
 
-        /// ✅ Student Routes with Bottom Navigation
+        /// Student Routes with Bottom Navigation (Protected)
         ShellRoute(
           builder: (context, state, child) => StudentMainScaffold(child: child),
           routes: [
@@ -99,23 +147,22 @@ class AppRouter {
             ),
             GoRoute(
               path: '/student-profile',
-              builder: (_, __) => const TakenTestReviewScreen(),
+              builder: (_, __) => const StudentProfileScreen(),
             ),
             GoRoute(
               path: '/student-wallet',
               builder: (_, __) => const WalletScreen(),
             ),
-           
           ],
         ),
 
-        /// Teacher route
+        /// Teacher route (Protected)
         GoRoute(
           path: AppRoutes.tacherDashboard,
           builder: (_, __) => DashoardScreen(),
         ),
 
-        /// Admin route (placeholder)
+        /// Admin route (Protected)
         GoRoute(
           path: AppRoutes.adminDashboard,
           builder: (_, __) => const Text("Admin Dashboard"),
