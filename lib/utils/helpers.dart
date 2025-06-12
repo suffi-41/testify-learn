@@ -55,7 +55,6 @@ class UiHelpers {
 
   static Widget customTextField(
     BuildContext context, {
-
     required String hintText,
     required TextEditingController controller,
     required validator,
@@ -64,13 +63,14 @@ class UiHelpers {
     bool obscureText = false,
     Widget? prefixIcon,
     Widget? suffixIcon,
+    bool enabled = true, // Add this optional parameter with default true
   }) {
     return TextFormField(
       controller: controller,
       validator: validator,
-      keyboardType:
-          keyboardType ?? TextInputType.text, // Use provided or fallback
+      keyboardType: keyboardType ?? TextInputType.text,
       obscureText: obscureText,
+      enabled: enabled, // Use it here
       decoration: InputDecoration(
         hintText: hintText,
         labelText: labelText,
@@ -163,6 +163,4 @@ class UiHelpers {
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
   }
-
-
 }

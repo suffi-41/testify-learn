@@ -3,8 +3,19 @@ import '../../utils/helpers.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/app_routes.dart';
 
+// redux
+import 'package:flutter_redux/flutter_redux.dart';
+import '../../../redux/actions/auth_actions.dart';
+import '../../../models/root_state.dart';
+
 class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
+
+  Future<void> _signOut(BuildContext context) async {
+    final store = StoreProvider.of<RootState>(context);
+    store.dispatch(LogoutRequestAction());
+    context.go(AppRoutes.login); // Navigate after logout
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +104,16 @@ class StudentProfileScreen extends StatelessWidget {
                   label: "About",
                   value:
                       "A passionate learner aiming to build great apps with Flutter.",
+                ),
+                const SizedBox(height: 30),
+                TextButton(
+                  onPressed: () {
+                    _signOut(context);
+                  },
+                  child: Text(
+                    "Logout",
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
                 ),
               ],
             ),

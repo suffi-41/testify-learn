@@ -4,9 +4,9 @@ import 'package:testify_learn_application/constants/app_routes.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/student_drawer.dart';
 
-class StudentMainScaffold extends StatelessWidget {
+class TeacherMainScaffold extends StatelessWidget {
   final Widget child;
-  const StudentMainScaffold({super.key, required this.child});
+  const TeacherMainScaffold({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -57,32 +57,32 @@ class StudentMainScaffold extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
     int index = 0;
 
-    if (location.startsWith(AppRoutes.studentTest))
+    if (location.startsWith(AppRoutes.teacherShowStudent))
       index = 1;
-    else if (location.startsWith(AppRoutes.studentLeaderboard))
+    else if (location.startsWith(AppRoutes.createNewTests))
       index = 2;
-    else if (location.startsWith(AppRoutes.studentProfile))
+    else if (location.startsWith(AppRoutes.teacherProfile))
       index = 4;
-    else if (location.startsWith(AppRoutes.studentWallet))
+    else if (location.startsWith(AppRoutes.teacherWallet))
       index = 3;
     return BottomNavigationBar(
       currentIndex: index,
       onTap: (value) {
         switch (value) {
           case 0:
-            context.go(AppRoutes.studentDashboard);
+            context.go(AppRoutes.teacherDashboard);
             break;
           case 1:
-            context.go(AppRoutes.studentTest);
+            context.go(AppRoutes.teacherShowStudent);
             break;
           case 2:
-            context.go(AppRoutes.studentLeaderboard);
+            context.go(AppRoutes.createNewTests);
             break;
           case 3:
-            context.go(AppRoutes.studentWallet);
+            context.go(AppRoutes.teacherWallet);
             break;
           case 4:
-            context.go(AppRoutes.studentProfile);
+            context.go(AppRoutes.teacherProfile);
         }
       },
       backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
@@ -92,8 +92,8 @@ class StudentMainScaffold extends StatelessWidget {
       elevation: 0,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tests'),
-        BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Rank'),
+        BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Students'),
+        BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
         BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Wallet'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],

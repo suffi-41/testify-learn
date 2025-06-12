@@ -17,9 +17,20 @@ class AppRoutes {
   // Studnets routes name
   static const studentDashboard = '/student-dashboard';
   static const String coachingCode = '/coaching-code';
+  static const String studentProfile = '/student-profile';
+  static const String studentWallet = '/student-wallet';
+  static const String studentTest = '/student-test';
+  static const String studentLeaderboard = '/student-leaderboard';
+
+  // dynamic routes
+  static const String testLeaderborad = '/test-leaderboard';
 
   // teacher routes name
-  static const tacherDashboard = '/teacher-dashboard';
+  static const teacherDashboard = '/teacher-dashboard';
+  static const teacherShowStudent = '/teacher-show-student';
+  static const teacherProfile = '/teacher-profile';
+  static const teacherWallet = '/teacher-wallet';
+  static const createNewTests = '/create-new-tests';
 
   // admin routes name
   static const adminDashboard = '/admin-dashboard';

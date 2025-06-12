@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../widgets/sticky_widget.dart';
 import "../../widgets/transecction_tile.dart";
+import '../../widgets/payment_dialog.dart';
+import '../../utils/helpers.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -22,10 +24,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Wallet"),
-        backgroundColor: Colors.deepPurple,
-      ),
+      appBar: UiHelpers.customAppBarForScreen(context, "Wallet"),
       body: CustomScrollView(
         slivers: [
           // Wallet Header
@@ -98,9 +97,29 @@ class _WalletScreenState extends State<WalletScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _walletButton("Withdraw", Icons.money_off, Colors.white),
+                  _walletButton("Withdraw", Icons.money_off, Colors.white, () {
+                    PaymentDialog.show(
+                      context: context,
+                      title: "Withdraw",
+                      buttonText: "Request Withdrawal",
+                      minAmount: 50,
+                      onConfirm: (upi, amount) {
+                        print("Withdraw ₹$amount to $upi");
+                      },
+                    );
+                  }),
                   const SizedBox(width: 12),
-                  _walletButton("Add Money", Icons.add_card, Colors.white),
+                  _walletButton("Add Money", Icons.add_card, Colors.white, () {
+                    PaymentDialog.show(
+                      context: context,
+                      title: "Add Money",
+                      buttonText: "Proceed to Pay",
+                      minAmount: 15,
+                      onConfirm: (upi, amount) {
+                        print("Add ₹$amount via $upi");
+                      },
+                    );
+                  }),
                 ],
               ),
             ],
@@ -110,10 +129,15 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _walletButton(String label, IconData icon, Color color) {
+  Widget _walletButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return Expanded(
       child: ElevatedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed,
         icon: Icon(icon, color: color),
         label: Text(label, style: TextStyle(color: color)),
         style: ElevatedButton.styleFrom(

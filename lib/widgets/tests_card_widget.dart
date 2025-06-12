@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 class TestCard extends StatelessWidget {
   final String subject;
   final String date;
@@ -9,6 +10,7 @@ class TestCard extends StatelessWidget {
   final String status;
   final String actionLabel;
   final Color actionColor;
+  final VoidCallback onPressed;
 
   const TestCard({
     super.key,
@@ -20,6 +22,7 @@ class TestCard extends StatelessWidget {
     required this.status,
     required this.actionLabel,
     required this.actionColor,
+    required this.onPressed,
   });
 
   @override
@@ -85,7 +88,7 @@ class TestCard extends StatelessWidget {
               Text("$mcqCount MCQ"),
               const Spacer(),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: onPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: actionColor,
                   padding: const EdgeInsets.symmetric(

@@ -46,7 +46,7 @@ class _LoginScreen extends State<LoginScreen> {
             if (vm.role == 'student') {
               context.go(AppRoutes.studentDashboard);
             } else if (vm.role == 'teacher') {
-              context.go(AppRoutes.tacherDashboard);
+              context.go(AppRoutes.teacherDashboard);
             } else {
               context.go(AppRoutes.login);
             }

@@ -157,7 +157,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
+       
         Expanded(
           child: leaderboard.isEmpty
               ? const Center(child: Text("No data available"))

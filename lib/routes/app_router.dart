@@ -14,20 +14,28 @@ import '../screens/auth/teacher/teacher_signup_screen.dart';
 import '../screens/auth/email_verification_screen.dart';
 import '../screens/auth/teacher/approval_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
-import '../screens/teachers/dashoard_screen.dart';
+
 import '../screens/students/student_dashboard.dart';
 import "../screens/students/coaching_code_screen.dart";
 
 // comman screens
 import '../screens/comman/notifications_screen.dart';
+// dynamic routes screen for test leader board
+import '../screens/comman/test_leaderboard.dart';
 
-// 👇 Import the persistent scaffold
+// 👇 Import the persistent scaffold for student
 import '../screens/students/student_main_scaffold.dart';
 import '../screens/students/tests_screen.dart';
 import '../screens/comman/wallet_screen.dart';
 import '../screens/students/leaderboard_screen.dart';
 import '../screens/students/student_profile.dart';
 import '../screens/students/quiz_taken_screen.dart';
+
+// teacher
+import '../screens/teachers/teacher_main_scaffold.dart';
+import '../screens/teachers/teacher_dashboard.dart';
+import '../screens/teachers/students_screen.dart';
+import '../screens/teachers/create_test_screen.dart';
 
 class AppRouter {
   static final _publicRoutes = [
@@ -60,7 +68,7 @@ class AppRouter {
       if (state.uri.path.startsWith('/student')) {
         if (userRole != 'student') {
           return userRole == 'teacher'
-              ? AppRoutes.tacherDashboard
+              ? AppRoutes.teacherDashboard
               : AppRoutes.login;
         }
       } else if (state.uri.path.startsWith('/teacher')) {
@@ -92,7 +100,7 @@ class AppRouter {
                 case 'student':
                   return AppRoutes.studentDashboard;
                 case 'teacher':
-                  return AppRoutes.tacherDashboard;
+                  return AppRoutes.teacherDashboard;
                 case 'admin':
                   return AppRoutes.adminDashboard;
                 default:
@@ -146,28 +154,52 @@ class AppRouter {
               builder: (_, __) => StudentDashboard(),
             ),
             GoRoute(
-              path: '/student-tests',
+              path: AppRoutes.studentTest,
               builder: (_, __) => const TestScreen(),
             ),
             GoRoute(
-              path: '/student-rank',
+              path: AppRoutes.studentLeaderboard,
               builder: (_, __) => const LeaderboardScreen(),
             ),
             GoRoute(
-              path: '/student-profile',
+              path: AppRoutes.studentProfile,
               builder: (_, __) => const StudentProfileScreen(),
             ),
             GoRoute(
-              path: '/student-wallet',
+              path: AppRoutes.studentWallet,
               builder: (_, __) => const WalletScreen(),
             ),
           ],
         ),
 
-        /// Teacher route (Protected)
+        // Dynamic routes
         GoRoute(
-          path: AppRoutes.tacherDashboard,
-          builder: (_, __) => DashoardScreen(),
+          path: '${AppRoutes.testLeaderborad}/:id',
+          builder: (context, state) =>
+              TestLeaderboardScreen(testId: state.pathParameters['id']!),
+        ),
+
+        /// Teacher route (Protected)
+        ShellRoute(
+          builder: (context, state, child) => TeacherMainScaffold(child: child),
+          routes: [
+            GoRoute(
+              path: AppRoutes.teacherDashboard,
+              builder: (_, __) => TeacherDashboard(),
+            ),
+            GoRoute(
+              path: AppRoutes.teacherShowStudent,
+              builder: (_, __) => const StudentsScreen(),
+            ),
+            GoRoute(
+              path: AppRoutes.createNewTests,
+              builder: (_, __) => const CreateTestScreen(),
+            ),
+            GoRoute(
+              path: AppRoutes.teacherWallet,
+              builder: (_, __) => const WalletScreen(),
+            ),
+          ],
         ),
 
         /// Admin route (Protected)

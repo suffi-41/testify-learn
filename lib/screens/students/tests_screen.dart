@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/tests_card_widget.dart';
 import '../../utils/helpers.dart';
+import 'package:go_router/go_router.dart';
+import '../../widgets/payment_dialog.dart';
+import '../../constants/app_routes.dart';
 
 class TestScreen extends StatefulWidget {
   const TestScreen({super.key});
@@ -12,6 +15,8 @@ class TestScreen extends StatefulWidget {
 class _TestScreenState extends State<TestScreen> {
   int selectedFilter = 0;
   final filters = ['All', 'Upcoming', 'Completed'];
+  int amount = 50;
+  final String actionLable = "paid";
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +39,28 @@ class _TestScreenState extends State<TestScreen> {
                       duration: "60 min",
                       mcqCount: "30",
                       status: index % 2 == 0 ? "Upcoming" : "Completed",
-                      actionLabel: index % 2 == 0 ? "₹50" : "Leaderboard",
+                      actionLabel: index % 2 == 0
+                          ? "₹${amount.toString()}"
+                          : "Leaderboard",
                       actionColor: index % 2 == 0
                           ? Colors.green
                           : Theme.of(context).colorScheme.primary,
+                      onPressed: () {
+                        if (actionLable == "paid") {
+                          context.push('${AppRoutes.testLeaderborad}/234');
+                        } else {
+                          PaymentDialog.show(
+                            context: context,
+                            title: "Test payment process",
+                            buttonText: "Proceed to Pay",
+                            minAmount: 15,
+                            amount: amount,
+                            onConfirm: (upi, amount) {
+                              print("Add ₹$amount via $upi");
+                            },
+                          );
+                        }
+                      },
                     ),
                   );
                 }),
