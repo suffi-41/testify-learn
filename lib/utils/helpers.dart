@@ -123,6 +123,7 @@ class UiHelpers {
     String title, {
     bool automaticallyImplyLeading = false,
     List<Widget>? actions,
+    PreferredSizeWidget? bottom,
   }) {
     return AppBar(
       automaticallyImplyLeading: automaticallyImplyLeading,
@@ -143,6 +144,7 @@ class UiHelpers {
       ),
       centerTitle: false,
       actions: actions,
+      bottom: bottom != null ? bottom : null,
     );
   }
 

@@ -41,3 +41,42 @@ Future<bool> isGoogleWithSignIn(String uid) async {
     return false;
   }
 }
+
+Future<String?> coachingCode(String uid) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection("teachers")
+        .doc(uid)
+        .get();
+
+    if (doc.exists && doc.data() != null) {
+      return doc.data()!['coachingCode'] as String?;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    print("Error fetching coachingCode for uid '$uid': $e");
+    return null;
+  }
+}
+
+Future<Map<String, dynamic>?> userDetails(
+  String uid,
+  String collections,
+) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection(collections)
+        .doc(uid)
+        .get();
+
+    if (doc.exists && doc.data() != null) {
+      return doc.data();
+    } else {
+      return null;
+    }
+  } catch (e) {
+    print("Error fetching userDetails for uid '$uid': $e");
+    return null;
+  }
+}

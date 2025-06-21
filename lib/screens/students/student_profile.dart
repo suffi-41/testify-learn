@@ -2,20 +2,12 @@ import 'package:flutter/material.dart';
 import '../../utils/helpers.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/app_routes.dart';
+import '../../widgets/modern_detials_row.dart';
 
-// redux
-import 'package:flutter_redux/flutter_redux.dart';
-import '../../../redux/actions/auth_actions.dart';
-import '../../../models/root_state.dart';
+
 
 class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
-
-  Future<void> _signOut(BuildContext context) async {
-    final store = StoreProvider.of<RootState>(context);
-    store.dispatch(LogoutRequestAction());
-    context.go(AppRoutes.login); // Navigate after logout
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +17,7 @@ class StudentProfileScreen extends StatelessWidget {
         "Profile",
         automaticallyImplyLeading: true,
         actions: [
+          IconButton(icon: const Icon(Icons.edit), onPressed: () {}),
           IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
         ],
       ),
@@ -32,7 +25,7 @@ class StudentProfileScreen extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -64,42 +57,42 @@ class StudentProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.phone,
                   label: "Phone",
                   value: "6307874140",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.school,
                   label: "Coaching",
                   value: "XYZ Coaching Institute",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.class_,
                   label: "Class",
                   value: "10th",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.location_city,
                   label: "City",
                   value: "Varanasi",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.calendar_today,
                   label: "Date of Birth",
                   value: "01 Jan 2005",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.person,
                   label: "Gender",
                   value: "Male",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.star,
                   label: "Skills",
                   value: "Flutter, Dart, Firebase",
                 ),
-                const _ModernDetailRow(
+                const ModernDetailRow(
                   icon: Icons.info_outline,
                   label: "About",
                   value:
@@ -108,7 +101,7 @@ class StudentProfileScreen extends StatelessWidget {
                 const SizedBox(height: 30),
                 TextButton(
                   onPressed: () {
-                    _signOut(context);
+                    
                   },
                   child: Text(
                     "Logout",
@@ -119,32 +112,6 @@ class StudentProfileScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ModernDetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _ModernDetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.deepPurple),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(value),
       ),
     );
   }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:testify_learn_application/models/root_state.dart';
 import '../../widgets/add_question_screen.dart';
 import '../../utils/helpers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../services/firebase_service.dart';
+import '../../utils/loacl_storage.dart';
 
 class CreateTestScreen extends StatefulWidget {
   const CreateTestScreen({super.key});
@@ -17,6 +22,7 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
   String? selectedFee;
   String? selectedDuration;
   String? selectedMCQ;
+  bool _isLoading = false; // <-- added loading flag
 
   final List<String> feeOptions = ['₹15', '₹25', '₹50', '₹75', '₹100'];
   final List<String> durationOptions = [
@@ -79,32 +85,79 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
                       ),
                       const SizedBox(height: 20),
                       Center(
-                        child: UiHelpers.customButton(
-                          context,
-                          "Add Questions",
-                          () {
-                            if (_formKey.currentState!.validate()) {
-                              int totalQuestions =
-                                  int.tryParse(
-                                    selectedMCQ?.split(' ').first ?? '0',
-                                  ) ??
-                                  0;
-
-                              Navigator.push(
+                        child: _isLoading
+                            ? const CircularProgressIndicator() // <-- show loader
+                            : UiHelpers.customButton(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => AddQuestionsScreen(
-                                    totalQuestions: totalQuestions,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                        ),
+                                "Add Questions",
+                                () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(
+                                      () => _isLoading = true,
+                                    ); // start loading
+
+                                    int totalQuestions = int.tryParse(
+                                          selectedMCQ?.split(' ').first ?? '0',
+                                        ) ??
+                                        0;
+
+                                    try {
+                                      final uid = await getLoacalStorage("uid");
+
+                                      String? code = await coachingCode(uid.toString());
+
+                                      final quizRef = await FirebaseFirestore
+                                          .instance
+                                          .collection('quizzes')
+                                          .add({
+                                        'title': _titleController.text.trim(),
+                                        'fee': selectedFee,
+                                        'duration': selectedDuration,
+                                        'isPublished': false,
+                                        'totalQuestions': totalQuestions,
+                                        'testDateTime':
+                                            _dateController.text.trim(),
+                                        'createdAt':
+                                            FieldValue.serverTimestamp(),
+                                        'createdBy':
+                                            uid, // Replace with actual user ID
+                                        'coachingCode': code,
+                                      });
+
+                                      setState(
+                                        () => _isLoading = false,
+                                      ); // stop loading
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AddQuestionsScreen(
+                                            totalQuestions: totalQuestions,
+                                            quizId: quizRef.id,
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      setState(
+                                        () => _isLoading = false,
+                                      ); // stop loading on error
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            "Failed to create test: $e",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
                       ),
                       const SizedBox(height: 30),
                       const Divider(),
-
                       const Text(
                         "Note:",
                         style: TextStyle(
@@ -207,8 +260,7 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
                 time.minute,
               );
 
-              final formatted =
-                  "${combined.day.toString().padLeft(2, '0')}-"
+              final formatted = "${combined.day.toString().padLeft(2, '0')}-"
                   "${combined.month.toString().padLeft(2, '0')}-"
                   "${combined.year} "
                   "${time.format(context)}";

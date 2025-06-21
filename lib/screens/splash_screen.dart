@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_service.dart';
 
-// redux
-import 'package:flutter_redux/flutter_redux.dart';
-import '../../redux/actions/auth_actions.dart';
-import '../../models/root_state.dart';
+// // redux
+// import 'package:flutter_redux/flutter_redux.dart';
+// import '../../redux/actions/auth_actions.dart';
+// import '../../models/root_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) setState(() => _opacity = 1.0);
     });
 
-    final store = StoreProvider.of<RootState>(context, listen: false);
+    // final store = StoreProvider.of<RootState>(context, listen: false);
 
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
       User? user,
@@ -38,12 +38,12 @@ class _SplashScreenState extends State<SplashScreen> {
         final role = await getUserRole(user.uid.toString());
 
         /// ✅ Dispatch LoginSuccess to Redux
-        store.dispatch(
-          AuthSuccess(user.uid, role.toString()),
-        ); // or get role from Firestore
+        // store.dispatch(
+        //   AuthSuccess(user.uid, role.toString()),
+        // ); // or get role from Firestore
       } else {
         /// ✅ Dispatch LogoutAction to Redux
-        store.dispatch(LogoutRequestAction());
+        // store.dispatch(LogoutRequestAction());
       }
     });
 

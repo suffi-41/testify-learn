@@ -1,6 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../utils/loacl_storage.dart';
 
 // routes name
 import '../../../constants/app_routes.dart';
@@ -10,10 +13,8 @@ import '../../../utils/responsive.dart';
 import '../../../widgets/picker_images.dart';
 import '../../../utils/cloudinary.dart';
 
-// redux
-import 'package:flutter_redux/flutter_redux.dart';
-import '../../../redux/actions/auth_actions.dart';
-import '../../../models/root_state.dart';
+// generate unique code
+import '../../../services/unique_code.dart';
 
 class TeacherSignup extends StatefulWidget {
   const TeacherSignup({super.key});
@@ -187,6 +188,7 @@ class _TeacherSignupState extends State<TeacherSignup> {
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : UiHelpers.customButton(context, "Submit", () async {
+                  // Inside onPressed of Submit button
                   if (_formKey.currentState!.validate()) {
                     if (teacherImageUrl == null || coachingImageUrl == null) {
                       UiHelpers.showSnackbar(
@@ -204,48 +206,69 @@ class _TeacherSignupState extends State<TeacherSignup> {
                     final String password = passwordController.text.trim();
                     final String name = fullNameController.text.trim();
                     final String phone = phoneController.text.trim();
-                    final String coachingName = coachingNameController.text
-                        .trim();
-                    final String coachingAddress = coachingAddressController
-                        .text
-                        .trim();
+                    final String coachingName =
+                        coachingNameController.text.trim();
+                    final String coachingAddress =
+                        coachingAddressController.text.trim();
 
-                    final store = StoreProvider.of<RootState>(context);
+                    try {
+                      final credential = await FirebaseAuth.instance
+                          .createUserWithEmailAndPassword(
+                              email: email, password: password);
 
-                    store.dispatch(
-                      StartTeacherSignup(
-                        email: email,
-                        password: password,
-                        fullName: name,
-                        phone: phone,
+                      final uid = credential.user!.uid;
+
+                      await credential.user!.sendEmailVerification();
+
+                      final String coachingCode =
+                          await generateUniqueCoachingCode(
                         coachingName: coachingName,
-                        coachingAddress: coachingAddress,
-                        teacherImageUrl: teacherImageUrl!,
-                        coachingImageUrl: coachingImageUrl!,
-                        onSuccess: () {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                          UiHelpers.showSnackbar(
-                            context,
-                            "Signup successful",
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.secondary,
-                          );
-                          context.go(AppRoutes.emailVerification);
-                        },
-                        onFailure: (error) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                          UiHelpers.showSnackbar(
-                            context,
-                            "Signup failed: $error",
-                          );
-                        },
-                      ),
-                    );
+                      );
+
+                      await FirebaseFirestore.instance
+                          .collection("teachers")
+                          .doc(uid)
+                          .set({
+                        "uid": uid,
+                        "email": email,
+                        "fullName": name,
+                        "phone": phone,
+                        "coachingName": coachingName,
+                        "coachingAddress": coachingAddress,
+                        "teacherImageUrl": teacherImageUrl,
+                        "coachingImageUrl": coachingImageUrl,
+                        "isApproved": false,
+                        "createdAt": Timestamp.now(),
+                        "coachingCode": coachingCode,
+                      });
+
+                      setState(() {
+                        _isLoading = false;
+                      });
+
+                      UiHelpers.showSnackbar(
+                        context,
+                        "Signup successful. Please verify your email.",
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondary,
+                      );
+
+                      saveLoacalStorage("uid", uid);
+
+                      context.go(AppRoutes.emailVerification);
+                    } on FirebaseAuthException catch (error) {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      UiHelpers.showSnackbar(
+                          context, "Signup failed: ${error.message}");
+                    } catch (error) {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      UiHelpers.showSnackbar(
+                          context, "Unexpected error: $error");
+                    }
                   }
                 }),
 
@@ -360,7 +383,6 @@ class _TeacherSignupState extends State<TeacherSignup> {
           isLoading: isUploadingTeacherImage,
         ),
         const SizedBox(height: 24),
-
         ImagePickerWidget(
           onImageSelected: (file) async {
             setState(() {

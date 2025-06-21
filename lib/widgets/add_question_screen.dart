@@ -1,21 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../utils/helpers.dart';
 
-class Question {
-  final String questionText;
-  final List<String> options;
-  final int correctIndex;
-
-  Question({
-    required this.questionText,
-    required this.options,
-    required this.correctIndex,
-  });
-}
-
 class AddQuestionsScreen extends StatefulWidget {
   final int totalQuestions;
-  const AddQuestionsScreen({super.key, required this.totalQuestions});
+  final String quizId;
+
+  const AddQuestionsScreen({
+    super.key,
+    required this.totalQuestions,
+    required this.quizId,
+  });
 
   @override
   State<AddQuestionsScreen> createState() => _AddQuestionsScreenState();
@@ -23,16 +18,15 @@ class AddQuestionsScreen extends StatefulWidget {
 
 class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
   int currentIndex = 0;
-  final List<Question> questions = [];
-
   final questionController = TextEditingController();
   final List<TextEditingController> optionControllers = List.generate(
     4,
     (_) => TextEditingController(),
   );
   int selectedOption = 0;
+  bool _isLoading = false;
 
-  void _nextQuestion() {
+  Future<void> _nextQuestion() async {
     if (questionController.text.isEmpty ||
         optionControllers.any((c) => c.text.isEmpty)) {
       ScaffoldMessenger.of(
@@ -41,29 +35,60 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
       return;
     }
 
-    questions.add(
-      Question(
-        questionText: questionController.text,
-        options: optionControllers.map((e) => e.text).toList(),
-        correctIndex: selectedOption,
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
-    if (currentIndex + 1 == widget.totalQuestions) {
+    try {
+      await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quizId)
+          .collection('questions')
+          .add({
+            'questionText': questionController.text.trim(),
+            'options': optionControllers.map((e) => e.text.trim()).toList(),
+            'correctOptionIndex': selectedOption,
+          });
+
+      if (currentIndex + 1 == widget.totalQuestions) {
+        // Mark quiz as published
+        // await FirebaseFirestore.instance
+        //     .collection('quizzes')
+        //     .doc(widget.quizId)
+        //     .update({'isPublished': true});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Test submitted and published!')),
+        );
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          currentIndex++;
+          questionController.clear();
+          for (var c in optionControllers) {
+            c.clear();
+          }
+          selectedOption = 0;
+        });
+      }
+    } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Test submitted!')));
-      Navigator.pop(context);
-    } else {
+      ).showSnackBar(SnackBar(content: Text('Error saving question: $e')));
+    } finally {
       setState(() {
-        currentIndex++;
-        questionController.clear();
-        for (var c in optionControllers) {
-          c.clear();
-        }
-        selectedOption = 0;
+        _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    questionController.dispose();
+    for (var c in optionControllers) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -89,8 +114,15 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: (currentIndex + 1) / widget.totalQuestions,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey[300],
+                      color: Colors.blueAccent,
+                    ),
+                    const SizedBox(height: 16),
 
-                    // Multiline question input
+                    // Question input
                     SizedBox(
                       height: 80,
                       child: TextField(
@@ -108,7 +140,7 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
 
                     const SizedBox(height: 10),
 
-                    // Option input fields with Radio
+                    // Option fields with radio
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -131,17 +163,19 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
 
                     const SizedBox(height: 10),
 
-                    SizedBox(
-                      width: 300,
-                      child: UiHelpers.customButton(
-                        context,
-                        currentIndex + 1 == widget.totalQuestions
-                            ? 'Submit'
-                            : 'Add another',
-                      
-                        _nextQuestion,
-                      ),
-                    ),
+                    // Add/Submit Button or Loader
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : SizedBox(
+                            width: 300,
+                            child: UiHelpers.customButton(
+                              context,
+                              currentIndex + 1 == widget.totalQuestions
+                                  ? 'Submit'
+                                  : 'Add Another',
+                              _nextQuestion,
+                            ),
+                          ),
 
                     const SizedBox(height: 20),
                     const Divider(),
@@ -163,7 +197,7 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
                       child: Text(
                         '• Enter your question in the box above.\n'
                         '• Fill all 4 options and select the correct one.\n'
-                        '• Click "Add another" to move to the next question.\n'
+                        '• Click "Add Another" to move to the next question.\n'
                         '• After the last question, click "Submit" to finish.',
                         style: TextStyle(fontSize: 14),
                       ),

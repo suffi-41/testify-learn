@@ -1,26 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_redux/flutter_redux.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-// Store and models
-import './redux/store/store.dart';
-import './models/root_state.dart';
-
-// Routes and Theme
-import './routes/app_router.dart';
-import './theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
+import './routes/app_router.dart'; // Your AppRouter file
+import './theme/app_theme.dart'; // Your theme
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Firebase
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "AIzaSyCp4nq1FBAkRuiYwJVWUq1r-8B659UU9jc",
         authDomain: "testify-learn-application.firebaseapp.com",
         projectId: "testify-learn-application",
-        storageBucket: "testify-learn-application.firebasestorage.app",
+        storageBucket: "testify-learn-application.appspot.com",
         messagingSenderId: "887875287802",
         appId: "1:887875287802:web:f3c6dfb97aa17865b72743",
         measurementId: "G-1ZN1ZSH1WR",
@@ -30,25 +25,23 @@ void main() async {
     await Firebase.initializeApp();
   }
 
-  runApp(MyApp());
+  // Create the router from SharedPreferences (local storage)
+  final GoRouter router = await AppRouter.createRouter();
+  runApp(MyApp(router: router));
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key});
-
-  final router = AppRouter.createRouter(appStore);
+  final GoRouter router;
+  const MyApp({super.key, required this.router});
 
   @override
   Widget build(BuildContext context) {
-    return StoreProvider<RootState>(
-      store: appStore,
-      child: MaterialApp.router(
-        routerConfig: router,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp.router(
+      routerConfig: router,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      debugShowCheckedModeBanner: false,
     );
   }
 }
