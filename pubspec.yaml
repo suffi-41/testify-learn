@@ -53,6 +53,7 @@ dependencies:
   intl: ^0.18.1
   cached_network_image: ^3.3.1
   shared_preferences: ^2.2.2
+  crypto: ^3.0.3
 
   
 

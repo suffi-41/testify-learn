@@ -15,7 +15,6 @@ import '../../widgets/sticky_widget.dart';
 import './widgets/test_list_screen.dart';
 import './widgets/studnet_list_screen.dart';
 import './widgets/all_activity_list.dart';
-
 // firebase
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -51,11 +50,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   void fetchTeacherDetails() async {
     final userId = await getLoacalStorage("uid");
-
     final user = await userDetails(userId.toString(), "teachers");
-
     if (user != null) {
       final coachingCode = user["coachingCode"]?.toString() ?? "N/A";
+      saveLoacalStorage("coachingCode", coachingCode);
       final quizSnapshot = await FirebaseFirestore.instance
           .collection('quizzes')
           .where('createdBy', isEqualTo: userId.toString())

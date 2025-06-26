@@ -25,10 +25,8 @@ Future<String?> getUserRole(String uid) async {
 
 Future<bool> isGoogleWithSignIn(String uid) async {
   try {
-    final doc = await FirebaseFirestore.instance
-        .collection("students")
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection("students").doc(uid).get();
 
     if (doc.exists) {
       final data = doc.data();
@@ -44,10 +42,8 @@ Future<bool> isGoogleWithSignIn(String uid) async {
 
 Future<String?> coachingCode(String uid) async {
   try {
-    final doc = await FirebaseFirestore.instance
-        .collection("teachers")
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection("teachers").doc(uid).get();
 
     if (doc.exists && doc.data() != null) {
       return doc.data()!['coachingCode'] as String?;
@@ -65,10 +61,8 @@ Future<Map<String, dynamic>?> userDetails(
   String collections,
 ) async {
   try {
-    final doc = await FirebaseFirestore.instance
-        .collection(collections)
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection(collections).doc(uid).get();
 
     if (doc.exists && doc.data() != null) {
       return doc.data();

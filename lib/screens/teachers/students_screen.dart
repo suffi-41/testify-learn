@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import './widgets/studnet_list_screen.dart';
 import '../../utils/helpers.dart';
+import '../../utils/loacl_storage.dart';
 
 class StudentsScreen extends StatefulWidget {
   const StudentsScreen({super.key});
@@ -12,11 +13,25 @@ class StudentsScreen extends StatefulWidget {
 class _StudentsScreenState extends State<StudentsScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  String? coachngCode;
+
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
 
   void _toggleSearch() {
     setState(() {
       _isSearching = !_isSearching;
       if (!_isSearching) _searchController.clear();
+    });
+  }
+
+  void loadData() async {
+    final code = await getLoacalStorage("coachingCode");
+    setState(() {
+      coachngCode = code.toString();
     });
   }
 
@@ -52,7 +67,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       fillColor: Colors.white,
                     ),
                     onChanged: (value) {
-                      setState(() {}); // triggers rebuild for updated search
+                      setState(() {});
                     },
                   ),
                 ),
@@ -68,10 +83,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: StudentListScreen(
-                coachingCode: 'dkahss',
-                searchQuery: _searchController.text.trim(),
-              ),
+              child: coachngCode == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : StudentListScreen(
+                      coachingCode: coachngCode!,
+                      searchQuery: _searchController.text.trim(),
+                    ),
             ),
           ),
         ),

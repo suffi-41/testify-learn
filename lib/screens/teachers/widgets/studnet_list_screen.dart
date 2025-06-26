@@ -5,25 +5,70 @@ import '../../../widgets/text_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-class StudentListScreen extends StatelessWidget {
+class StudentListScreen extends StatefulWidget {
   final String coachingCode;
-  final String searchQuery; // 🔍 Add search query
+  final String searchQuery;
 
   const StudentListScreen({
     super.key,
     required this.coachingCode,
-    this.searchQuery = '', // default empty
+    this.searchQuery = '',
   });
 
   @override
-  Widget build(BuildContext context) {
-    final testStream = FirebaseFirestore.instance
-        .collection('students')
-        // .where('coachingCode', isEqualTo: coachingCode)
-        .snapshots();
+  State<StudentListScreen> createState() => _StudentListScreenState();
+}
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: testStream,
+class _StudentListScreenState extends State<StudentListScreen> {
+  late Future<List<DocumentSnapshot>> _studentsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _studentsFuture = _getJoinedStudents();
+  }
+
+  Future<List<DocumentSnapshot>> _getJoinedStudents() async {
+    final codeSnapshots = await FirebaseFirestore.instance
+        .collectionGroup('coachingCodes')
+        .where('code', isEqualTo: widget.coachingCode)
+        .get();
+
+    final studentUids = codeSnapshots.docs
+        .map((doc) {
+          final path = doc.reference.path;
+          return path.split('/')[1]; // students/{uid}/coachingCodes/{id}
+        })
+        .toSet()
+        .toList();
+
+    if (studentUids.isEmpty) return [];
+
+    List<DocumentSnapshot> allStudents = [];
+    const batchSize = 10;
+
+    for (var i = 0; i < studentUids.length; i += batchSize) {
+      final batch = studentUids.sublist(
+          i,
+          i + batchSize > studentUids.length
+              ? studentUids.length
+              : i + batchSize);
+
+      final studentsQuery = await FirebaseFirestore.instance
+          .collection('students')
+          .where(FieldPath.documentId, whereIn: batch)
+          .get();
+
+      allStudents.addAll(studentsQuery.docs);
+    }
+
+    return allStudents;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<DocumentSnapshot>>(
+      future: _studentsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -33,18 +78,17 @@ class StudentListScreen extends StatelessWidget {
           return Center(child: Text("Error: ${snapshot.error}"));
         }
 
-        final docs = snapshot.data?.docs ?? [];
+        final docs = snapshot.data ?? [];
 
-        // 🔍 Filter based on search query
-        final filteredDocs = searchQuery.isEmpty
+        final filteredDocs = widget.searchQuery.isEmpty
             ? docs
             : docs.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final fullName =
                     data['fullName']?.toString().toLowerCase() ?? '';
                 final email = data['email']?.toString().toLowerCase() ?? '';
-                return fullName.contains(searchQuery.toLowerCase()) ||
-                    email.contains(searchQuery.toLowerCase());
+                return fullName.contains(widget.searchQuery.toLowerCase()) ||
+                    email.contains(widget.searchQuery.toLowerCase());
               }).toList();
 
         if (filteredDocs.isEmpty) {
@@ -55,7 +99,6 @@ class StudentListScreen extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: filteredDocs.length,
-          
           itemBuilder: (context, index) {
             final doc = filteredDocs[index];
             final data = doc.data() as Map<String, dynamic>;

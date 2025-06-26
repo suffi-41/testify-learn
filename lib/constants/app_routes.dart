@@ -27,6 +27,7 @@ class AppRoutes {
   static const String testLeaderborad = '/test-leaderboard';
   static const String testDetails = '/test-details';
   static const String studentDetails = '/student-details';
+  static const String takeTest = '/test-taken';
 
   // teacher routes name
   static const teacherDashboard = '/teacher-dashboard';

@@ -10,6 +10,7 @@ class TestCard extends StatelessWidget {
   final String actionLabel;
   final Color actionColor;
   final VoidCallback onPressed;
+  final String? extraInfo;
 
   const TestCard({
     super.key,
@@ -22,6 +23,7 @@ class TestCard extends StatelessWidget {
     required this.actionLabel,
     required this.actionColor,
     required this.onPressed,
+    this.extraInfo,
   });
 
   @override
@@ -29,7 +31,6 @@ class TestCard extends StatelessWidget {
     return Container(
       color: Theme.of(context).cardColor,
       padding: const EdgeInsets.all(16),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -50,9 +51,11 @@ class TestCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.color?.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.color
+                      ?.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(status, style: const TextStyle(fontSize: 12)),
@@ -73,6 +76,16 @@ class TestCard extends StatelessWidget {
               Text("Time: $time"),
             ],
           ),
+
+          // Show extra info like enrolled count
+          if (extraInfo != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              extraInfo!,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
+
           const SizedBox(height: 12),
 
           // Duration, MCQs, Button

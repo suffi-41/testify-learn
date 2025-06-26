@@ -4,10 +4,11 @@ import 'package:testify_learn_application/constants/app_routes.dart';
 import 'package:testify_learn_application/theme/color_pelette.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/state_box.dart';
-import '../../widgets/text_card.dart';
 import '../../widgets/tab_buttom.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/sticky_widget.dart';
+import './widgets/test_list.dart';
+import '../../utils/loacl_storage.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -18,6 +19,23 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   int _tabIndex = 0;
+  String? _coachingCode;
+  String _uid = ""; // Update this with actual UID from auth
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalData();
+  }
+
+  void _loadLocalData() async {
+    final code = await getLoacalStorage("coachingCode");
+    final uid = await getLoacalStorage("uid");
+    setState(() {
+      _coachingCode = code;
+      //  _uid = uid;
+    });
+  }
 
   void _setTab(int index) {
     setState(() {
@@ -85,7 +103,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Coaching Name: Sufiyan coaching center",
+                        "Coaching Code: $_coachingCode",
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -119,7 +137,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
         ),
-
         StickyTopPositioned(
           child: Container(
             color: Theme.of(context).scaffoldBackgroundColor,
@@ -149,7 +166,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
         ),
-
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -160,14 +176,21 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   _tabIndex == 0
                       ? 'Recent Activity'
                       : _tabIndex == 1
-                      ? 'Upcoming Tests'
-                      : 'Completed Tests',
+                          ? 'Upcoming Tests'
+                          : 'Completed Tests',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
-                // ...List.generate(10, (index) => const TestCard()),
+                if (_coachingCode != null)
+                  TestListScreen(
+                    // uid: _uid,
+                    coachingCode: _coachingCode!,
+                    // tabIndex: _tabIndex,
+                  )
+                else
+                  const Center(child: CircularProgressIndicator()),
               ],
             ),
           ),

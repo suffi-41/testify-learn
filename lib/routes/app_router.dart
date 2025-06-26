@@ -27,7 +27,7 @@ import '../screens/students/tests_screen.dart';
 import '../screens/comman/wallet_screen.dart';
 import '../screens/students/leaderboard_screen.dart';
 import '../screens/students/student_profile.dart';
-import '../screens/students/quiz_taken_screen.dart';
+import '../screens/students/quiz_attend_screen.dart';
 import '../screens/teachers/teacher_main_scaffold.dart';
 import '../screens/teachers/teacher_dashboard.dart';
 import '../screens/teachers/students_screen.dart';
@@ -170,6 +170,21 @@ class AppRouter {
           path: '${AppRoutes.testDetails}/:id',
           builder: (context, state) =>
               TestDetailsScreen(testId: state.pathParameters['id']!),
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.takeTest}/:id',
+          builder: (context, state) {
+            final quizId = state.pathParameters['id']!;
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+
+            return QuizAttendScreen(
+              quizId: quizId,
+              title: extra['title'] ?? 'Untitled',
+              durationInMinutes:
+                  int.tryParse(extra['duration']?.toString() ?? '') ?? 30,
+            );
+          },
         ),
 
         // Teacher Shell

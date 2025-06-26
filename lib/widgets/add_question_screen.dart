@@ -45,10 +45,10 @@ class _AddQuestionsScreenState extends State<AddQuestionsScreen> {
           .doc(widget.quizId)
           .collection('questions')
           .add({
-            'questionText': questionController.text.trim(),
-            'options': optionControllers.map((e) => e.text.trim()).toList(),
-            'correctOptionIndex': selectedOption,
-          });
+        'questionText': questionController.text.trim(),
+        'options': optionControllers.map((e) => e.text.trim()).toList(),
+        'correctOptionIndex': selectedOption,
+      });
 
       if (currentIndex + 1 == widget.totalQuestions) {
         // Mark quiz as published

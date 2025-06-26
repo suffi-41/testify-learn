@@ -17,7 +17,31 @@ class PaymentDialog extends StatefulWidget {
     this.amount,
   });
 
-  /// 🔹 Call this method to open the dialog from anywhere
+  //  🔹 Call this dialog from your code like:
+
+  //  PaymentDialog.show(
+  //    context: context,
+  //    title: "Pay & Enroll",
+  //    buttonText: "Pay",
+  //    minAmount: 10,
+  //    amount: 150, // Optional
+  //    onConfirm: (upi, amount) async {
+  //      await FirebaseFirestore.instance
+  //        .collection('students')
+  //        .doc(userId)
+  //        .collection('enrolledTests')
+  //        .doc(testId)
+  //        .set({
+  //          'hasPaid': true,
+  //          'paymentAmount': amount,
+  //          'paymentMethod': 'upi',
+  //          'upiId': upi,
+  //          'enrolledAt': Timestamp.now(),
+  //          'status': 'enrolled',
+  //        });
+  //    },
+  //  );
+
   static Future<void> show({
     required BuildContext context,
     required String title,
@@ -92,7 +116,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   hintText: "UPI ID",
                   prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
                   controller: _upiController,
-
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Enter your UPI ID';

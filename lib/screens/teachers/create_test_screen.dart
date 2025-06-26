@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:testify_learn_application/models/root_state.dart';
 import '../../widgets/add_question_screen.dart';
 import '../../utils/helpers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -104,7 +103,8 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
                                     try {
                                       final uid = await getLoacalStorage("uid");
 
-                                      String? code = await coachingCode(uid.toString());
+                                      String? code =
+                                          await coachingCode(uid.toString());
 
                                       final quizRef = await FirebaseFirestore
                                           .instance
@@ -122,6 +122,8 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
                                         'createdBy':
                                             uid, // Replace with actual user ID
                                         'coachingCode': code,
+                                        'isLive': false,
+                                        'isCompleted': false,
                                       });
 
                                       setState(

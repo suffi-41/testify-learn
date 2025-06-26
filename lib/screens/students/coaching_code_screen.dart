@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
+import '../../constants/app_routes.dart';
 import '../../utils/helpers.dart';
 import '../../utils/responsive.dart';
+import '../../utils/loacl_storage.dart';
 
 class CoachingCodeScreen extends StatefulWidget {
   const CoachingCodeScreen({super.key});
-
   @override
   State<CoachingCodeScreen> createState() => _CoachingCodeScreenState();
 }
@@ -13,45 +16,16 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  String? selectedCode;
   bool isFocused = false;
-
-  final List<String> coachingCodes = [
-    'ABC123',
-    'XYZ456',
-    'DKAHSS',
-    'MATH101',
-    'SCIENCE202',
-    'HIST999',
-  ];
-
+  bool isLoading = false;
+  List<String> coachingCodes = [];
   List<String> filteredCodes = [];
-
-  void _submitCode() {
-    if (selectedCode == null || selectedCode!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select or enter a coaching code')),
-      );
-      return;
-    }
-
-    print('Submitted Coaching Code: $selectedCode');
-    // Add Firebase/Navigation logic here
-  }
 
   @override
   void initState() {
     super.initState();
-
-    _controller.addListener(() {
-      final input = _controller.text.toLowerCase();
-      setState(() {
-        selectedCode = _controller.text;
-        filteredCodes = coachingCodes
-            .where((code) => code.toLowerCase().contains(input))
-            .toList();
-      });
-    });
+    _loadJoinedCodes();
+    _controller.addListener(_inputListener);
 
     _focusNode.addListener(() {
       setState(() {
@@ -63,8 +37,116 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
     });
   }
 
+  void _inputListener() {
+    final input = _controller.text.toLowerCase();
+    setState(() {
+      filteredCodes = coachingCodes
+          .where((code) => code.toLowerCase().contains(input))
+          .toList();
+    });
+  }
+
+  Future<void> _loadJoinedCodes() async {
+    final uid = await getLoacalStorage("uid");
+    if (uid == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection("students")
+        .doc(uid)
+        .collection("coachingCodes")
+        .get();
+
+    coachingCodes = snapshot.docs
+        .map((doc) => doc.data()['code']?.toString())
+        .whereType<String>()
+        .toList();
+
+    filteredCodes = List.from(coachingCodes);
+    setState(() {});
+  }
+
+  Future<void> _submitCode() async {
+    final inputCode = _controller.text.trim().toUpperCase();
+
+    if (inputCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a coaching code')),
+      );
+      _focusNode.requestFocus();
+      return;
+    }
+
+    final uid = await getLoacalStorage("uid");
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not logged in')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Check if the coaching code exists in the teachers collection
+      final teacherSnapshot = await FirebaseFirestore.instance
+          .collection('teachers')
+          .where('coachingCode', isEqualTo: inputCode)
+          .get();
+
+      if (teacherSnapshot.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid coaching code')),
+        );
+        return;
+      }
+
+      final coachingDocRef = FirebaseFirestore.instance
+          .collection("students")
+          .doc(uid)
+          .collection("coachingCodes")
+          .doc(inputCode);
+
+      final coachingDoc = await coachingDocRef.get();
+
+      if (coachingDoc.exists) {
+        // Already joined
+        await _storeLocallyAndRedirect(inputCode);
+        return;
+      }
+
+      // Add new coaching code
+      await coachingDocRef.set({
+        'code': inputCode,
+        'joinedAt': Timestamp.now(),
+      });
+
+      await _storeLocallyAndRedirect(inputCode);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _storeLocallyAndRedirect(String code) async {
+    await saveLoacalStorage("coachingCode", code);
+
+    if (mounted) {
+      context.go(AppRoutes.studentDashboard);
+    }
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_inputListener);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -108,27 +190,23 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
   }
 
   Widget _layoutColumn() {
-    return Center(
-      child: Column(
-        children: [
-          _image(),
-          const SizedBox(height: 30),
-          _joinSection(context),
-        ],
-      ),
+    return Column(
+      children: [
+        _image(),
+        const SizedBox(height: 30),
+        _joinSection(),
+      ],
     );
   }
 
   Widget _layoutRow() {
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _image(),
-          const SizedBox(width: 60),
-          SizedBox(width: 400, child: _joinSection(context)),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _image(),
+        const SizedBox(width: 60),
+        SizedBox(width: 400, child: _joinSection()),
+      ],
     );
   }
 
@@ -144,39 +222,61 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
     );
   }
 
-  Widget _joinSection(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Theme.of(context).cardColor,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter Coaching Code',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+  Widget _joinSection() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Card(
+          elevation: 2,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          color: Theme.of(context).cardColor,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Enter Coaching Code',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                TextFormField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  decoration: InputDecoration(
+                    hintText: 'Type coaching code',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: const Icon(Icons.school),
+                  ),
+                ),
+                const SizedBox(height: 60),
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : UiHelpers.customButton(context, "Submit", _submitCode),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _controller,
-              focusNode: _focusNode,
-              decoration: InputDecoration(
-                hintText: 'Type coaching code',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                prefixIcon: const Icon(Icons.school),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (isFocused && filteredCodes.isNotEmpty)
-              Container(
+          ),
+        ),
+
+        /// Dropdown List
+        if (isFocused && filteredCodes.isNotEmpty)
+          Positioned(
+            top: 110,
+            left: 0,
+            right: 0,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 180),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   shrinkWrap: true,
                   itemCount: filteredCodes.length,
                   itemBuilder: (context, index) {
@@ -185,8 +285,12 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
                       title: Text(code),
                       onTap: () {
                         setState(() {
-                          _controller.text = code;
-                          selectedCode = code;
+                          _controller
+                            ..removeListener(_inputListener)
+                            ..text = code
+                            ..selection =
+                                TextSelection.collapsed(offset: code.length)
+                            ..addListener(_inputListener);
                           filteredCodes.clear();
                           _focusNode.unfocus();
                         });
@@ -195,11 +299,9 @@ class _CoachingCodeScreenState extends State<CoachingCodeScreen> {
                   },
                 ),
               ),
-            const SizedBox(height: 20),
-            UiHelpers.customButton(context, "Submit", _submitCode),
-          ],
-        ),
-      ),
+            ),
+          ),
+      ],
     );
   }
 }

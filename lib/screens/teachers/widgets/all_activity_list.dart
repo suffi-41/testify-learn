@@ -5,7 +5,7 @@ import '../../../widgets/text_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-class AllActivityList extends StatelessWidget {
+class AllActivityList extends StatefulWidget {
   final String uid;
   final String coachingCode;
 
@@ -16,74 +16,117 @@ class AllActivityList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final quizzesFuture = FirebaseFirestore.instance
+  State<AllActivityList> createState() => _AllActivityListState();
+}
+
+class _AllActivityListState extends State<AllActivityList> {
+  late Future<List<Map<String, dynamic>>> _allDataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _allDataFuture = _fetchAllData();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchAllData() async {
+    final List<Map<String, dynamic>> allData = [];
+
+    // 1. Get quizzes created by the teacher
+    final quizSnapshot = await FirebaseFirestore.instance
         .collection('quizzes')
-        .where('createdBy', isEqualTo: uid)
-        .where('coachingCode', isEqualTo: coachingCode)
+        .where('createdBy', isEqualTo: widget.uid)
+        .where('coachingCode', isEqualTo: widget.coachingCode)
         .get();
 
-    final studentsFuture = FirebaseFirestore.instance
-        .collection('students')
-        .get();
-    // .where('coachingCode', isNotEqualTo: coachingCode)
+    for (final doc in quizSnapshot.docs) {
+      final quizData = doc.data();
+      allData.add({
+        'type': 'quiz',
+        'id': doc.id,
+        'data': quizData,
+        'createdAt': quizData['createdAt'] as Timestamp?,
+      });
+    }
 
-    return FutureBuilder<List<QuerySnapshot>>(
-      future: Future.wait([quizzesFuture, studentsFuture]),
+    // 2. Get students who joined with this coaching code
+    final joinedSnapshot = await FirebaseFirestore.instance
+        .collectionGroup('coachingCodes')
+        .where('code', isEqualTo: widget.coachingCode)
+        .get();
+
+    for (final subDoc in joinedSnapshot.docs) {
+      final pathSegments = subDoc.reference.path.split('/');
+      if (pathSegments.length >= 2) {
+        final studentUid =
+            pathSegments[1]; // students/{uid}/coachingCodes/{docId}
+
+        final studentDoc = await FirebaseFirestore.instance
+            .collection('students')
+            .doc(studentUid)
+            .get();
+
+        if (studentDoc.exists) {
+          final studentData = studentDoc.data()!;
+          allData.add({
+            'type': 'student',
+            'id': studentUid,
+            'data': studentData,
+            'createdAt': subDoc['joinedAt'] ?? studentData['createdAt'],
+          });
+        }
+      }
+    }
+
+    // Sort by createdAt or joinedAt
+    allData.sort((a, b) {
+      final aTime = a['createdAt'] as Timestamp?;
+      final bTime = b['createdAt'] as Timestamp?;
+      return bTime?.compareTo(aTime ?? Timestamp(0, 0)) ?? 0;
+    });
+
+    return allData;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _allDataFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final quizDocs = snapshot.data![0].docs;
-        final studentDocs = snapshot.data![1].docs;
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}"));
+        }
 
-        final mergedList = [
-          ...quizDocs.map((doc) => {'type': 'quiz', 'data': doc}),
-          ...studentDocs.map((doc) => {'type': 'student', 'data': doc}),
-        ];
-
-        // Sort merged by 'createdAt'
-        mergedList.sort((a, b) {
-          final timeA =
-              (a['data'] as DocumentSnapshot).get('createdAt') as Timestamp?;
-          final timeB =
-              (b['data'] as DocumentSnapshot).get('createdAt') as Timestamp?;
-          return timeB?.compareTo(timeA ?? Timestamp(0, 0)) ?? 0;
-        });
-
-        if (mergedList.isEmpty) {
+        final allData = snapshot.data ?? [];
+        if (allData.isEmpty) {
           return const Center(child: Text("No activity found."));
         }
 
         return ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: mergedList.length,
+          itemCount: allData.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
-            final item = mergedList[index];
-            final doc = item['data'] as DocumentSnapshot;
-            final data = doc.data() as Map<String, dynamic>;
+            final item = allData[index];
+            final data = item['data'] as Map<String, dynamic>;
+            final Timestamp? timestamp = item['createdAt'];
 
-            String createdAtStr = "";
-            final timestamp = data['createdAt'];
-            if (timestamp is Timestamp) {
-              final date = timestamp.toDate();
-              createdAtStr = DateFormat.yMMMd().add_Hm().format(date);
-            }
+            final createdAtStr = timestamp != null
+                ? DateFormat.yMMMd().add_Hm().format(timestamp.toDate())
+                : '';
 
             if (item['type'] == 'quiz') {
-              final testDateTime = data['testDateTime'];
-            
-
               return TestCard(
                 title: data['title'] ?? 'Untitled Test',
-                subTitle: "Test Date : $testDateTime",
+                subTitle: "Test Date : ${data['testDateTime'] ?? 'N/A'}",
                 bottomTitle: "Created on $createdAtStr",
                 icon: Icons.assignment,
                 onTap: () {
-                  context.push('${AppRoutes.testDetails}/${doc.id}');
+                  context.push('${AppRoutes.testDetails}/${item['id']}');
                 },
               );
             } else {
@@ -94,7 +137,7 @@ class AllActivityList extends StatelessWidget {
                 imagesUrl:
                     "https://mohdbinsufiyan.vercel.app/assets/media/mypic.jpg",
                 onTap: () {
-                  // Navigate if needed
+                  // You can add navigation to student details
                 },
               );
             }
