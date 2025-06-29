@@ -26,7 +26,7 @@ class AppRoutes {
   // dynamic routes
   static const String testLeaderborad = '/test-leaderboard';
   static const String testDetails = '/test-details';
-  static const String studentDetails = '/student-details';
+  static const String studentDetails = '/teacher/student-details';
   static const String takeTest = '/test-taken';
 
   // teacher routes name
@@ -36,6 +36,7 @@ class AppRoutes {
   static const teacherWallet = '/teacher-wallet';
   static const createNewTests = '/create-new-tests';
   static const editTeacherinfo = '/edit-teacher-info';
+  static const studentsAttandance = '/teacher/students-attendance';
 
   // admin routes name
   static const adminDashboard = '/admin-dashboard';

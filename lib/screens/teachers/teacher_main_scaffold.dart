@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:testify_learn_application/constants/app_routes.dart';
 import '../../utils/responsive.dart';
-import '../../widgets/student_drawer.dart';
+import '../students/widgets/student_drawer.dart';
 
 class TeacherMainScaffold extends StatelessWidget {
   final Widget child;

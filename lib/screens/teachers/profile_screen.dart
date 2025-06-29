@@ -228,14 +228,12 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundImage:
-                                  (profileImageUrl.isNotEmpty &&
+                              backgroundImage: (profileImageUrl.isNotEmpty &&
                                       !isProfileImage)
                                   ? NetworkImage(profileImageUrl)
                                   : const AssetImage(
-                                          'assets/images/default_user.png',
-                                        )
-                                        as ImageProvider,
+                                      'assets/images/default_user.png',
+                                    ) as ImageProvider,
                             ),
                           ),
                           if (isProfileImage)
@@ -279,7 +277,6 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 const SizedBox(height: 6),
                 Text(email, style: const TextStyle(color: Colors.grey)),
                 const SizedBox(height: 30),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: UiHelpers.sectionTitle("Teacher Info"),
@@ -309,7 +306,6 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                   label: "About",
                   value: about.isNotEmpty ? about : suggestInfo,
                 ),
-
                 const SizedBox(height: 30),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -335,7 +331,6 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                   label: "Total Quizzes",
                   value: '0',
                 ),
-
                 const SizedBox(height: 40),
               ],
             ),

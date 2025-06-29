@@ -138,6 +138,7 @@ class _AllActivityListState extends State<AllActivityList> {
                     "https://mohdbinsufiyan.vercel.app/assets/media/mypic.jpg",
                 onTap: () {
                   // You can add navigation to student details
+                   context.push('${AppRoutes.studentDetails}/${item['id']}');
                 },
               );
             }

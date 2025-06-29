@@ -34,6 +34,7 @@ import '../screens/teachers/students_screen.dart';
 import '../screens/teachers/create_test_screen.dart';
 import '../screens/teachers/profile_screen.dart';
 import '../screens/teachers/edit_profile_screen.dart';
+import '../screens/teachers/students_attandance_screen.dart';
 
 class AppRouter {
   static final _publicRoutes = [
@@ -144,7 +145,7 @@ class AppRouter {
           routes: [
             GoRoute(
                 path: AppRoutes.studentDashboard,
-                builder: (_, __) => StudentDashboard()),
+                builder: (_, __) => const StudentDashboard()),
             GoRoute(
                 path: AppRoutes.studentTest,
                 builder: (_, __) => const TestScreen()),
@@ -176,13 +177,9 @@ class AppRouter {
           path: '${AppRoutes.takeTest}/:id',
           builder: (context, state) {
             final quizId = state.pathParameters['id']!;
-            final extra = state.extra as Map<String, dynamic>? ?? {};
 
             return QuizAttendScreen(
               quizId: quizId,
-              title: extra['title'] ?? 'Untitled',
-              durationInMinutes:
-                  int.tryParse(extra['duration']?.toString() ?? '') ?? 30,
             );
           },
         ),
@@ -210,6 +207,13 @@ class AppRouter {
         ),
 
         GoRoute(
+          path: '${AppRoutes.studentsAttandance}/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return StudentsAttandanceScreen(quizId: id);
+          },
+        ),
+        GoRoute(
           path: '${AppRoutes.studentDetails}/:id',
           builder: (context, state) =>
               StudentDetailsScreen(studentId: state.pathParameters['id']!),
@@ -222,6 +226,7 @@ class AppRouter {
             return EditTeacherInfoScreen(initialData: data, uid: uid);
           },
         ),
+
         GoRoute(
           path: AppRoutes.adminDashboard,
           builder: (_, __) => const Text("Admin Dashboard"),

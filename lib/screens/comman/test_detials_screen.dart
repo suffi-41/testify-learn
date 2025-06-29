@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../utils/helpers.dart';
-import '../../widgets/payment_dialog.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/app_routes.dart';
 
@@ -16,25 +14,15 @@ class TestDetailsScreen extends StatefulWidget {
 }
 
 class _TestDetailsScreenState extends State<TestDetailsScreen> {
-  final user = FirebaseAuth.instance.currentUser;
-  String role = 'student';
+  late final Stream<DocumentSnapshot> _quizStream;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserRole();
-  }
-
-  void _fetchUserRole() async {
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .get();
-    if (userDoc.exists) {
-      setState(() {
-        role = userDoc['role'] ?? 'student';
-      });
-    }
+    _quizStream = FirebaseFirestore.instance
+        .collection('quizzes')
+        .doc(widget.testId)
+        .snapshots();
   }
 
   @override
@@ -43,10 +31,7 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
       appBar: UiHelpers.customAppBarForScreen(context, "Test Details",
           automaticallyImplyLeading: true),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('quizzes')
-            .doc(widget.testId)
-            .snapshots(),
+        stream: _quizStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -60,7 +45,7 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
           final fee =
               int.tryParse(data['fee']?.replaceAll('₹', '') ?? '0') ?? 0;
           final isPublished = data['isPublished'] ?? false;
-          final isLive = data['isLive'] == true;
+          final isLive = data['status'] == "Live";
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -73,20 +58,24 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
                     "Date & Time", formatDateTime(data['testDateTime'])),
                 _modernTile("Fee", "₹$fee"),
                 _modernTile("Duration", "${data['duration']} mins"),
-                if (isLive)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Chip(
-                      label: const Text("LIVE",
-                          style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.red,
-                    ),
-                  ),
+                _modernTile("Status", isLive ? "Live" : "Not Live"),
                 const SizedBox(height: 20),
-                if (role == 'admin' || role == 'teacher')
-                  _buildSwitchTile("Published", isPublished),
-                const SizedBox(height: 24),
-                if (role == 'student') _studentActions(data, isLive),
+                _buildSwitchTile("Published", isPublished),
+                const SizedBox(height: 20),
+                isPublished == true
+                    ? SizedBox(
+                        width: 200,
+                        child: UiHelpers.customButton(
+                          context,
+                          "Attendance",
+                          () {
+                            context.push(
+                              '${AppRoutes.studentsAttandance}/${widget.testId}',
+                            );
+                          },
+                        ),
+                      )
+                    : const SizedBox.shrink(), // If false, show nothing
                 const SizedBox(height: 24),
                 Text("Questions",
                     style: Theme.of(context).textTheme.titleLarge),
@@ -97,133 +86,6 @@ class _TestDetailsScreenState extends State<TestDetailsScreen> {
           );
         },
       ),
-    );
-  }
-
-  Widget _studentActions(Map<String, dynamic> testData, bool isLive) {
-    final enrolledRef = FirebaseFirestore.instance
-        .collection('students')
-        .doc(user!.uid)
-        .collection('enrolledTests')
-        .doc(widget.testId);
-
-    return FutureBuilder<DocumentSnapshot>(
-      future: enrolledRef.get(),
-      builder: (context, snapshot) {
-        bool isEnrolled = false;
-        bool hasPaid = false;
-
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          isEnrolled = true;
-          hasPaid = data['hasPaid'] ?? false;
-        }
-
-        if (!isEnrolled) {
-          return ElevatedButton(
-            onPressed: () {
-              PaymentDialog.show(
-                context: context,
-                title: "Pay & Enroll",
-                buttonText: "Pay",
-                minAmount: 10,
-                amount:
-                    int.tryParse(testData['fee']?.replaceAll('₹', '') ?? '0') ??
-                        0,
-                onConfirm: (upi, amount) async {
-                  final now = Timestamp.now();
-                  final userDocSnap = await FirebaseFirestore.instance
-                      .collection('students')
-                      .doc(user!.uid)
-                      .get();
-                  final userDoc = userDocSnap.data() ?? {};
-
-                  final paymentId = FirebaseFirestore.instance
-                      .collection('payments')
-                      .doc()
-                      .id;
-
-                  await FirebaseFirestore.instance
-                      .collection('payments')
-                      .doc(paymentId)
-                      .set({
-                    'paymentId': paymentId,
-                    'studentUid': user!.uid,
-                    'studentName': userDoc['name'] ?? '',
-                    'amount': amount,
-                    'testId': widget.testId,
-                    'testTitle': testData['title'] ?? '',
-                    'paidAt': now,
-                    'upiId': upi,
-                    'status': 'success'
-                  });
-
-                  await FirebaseFirestore.instance
-                      .collection('quizzes')
-                      .doc(widget.testId)
-                      .collection('enrolledStudents')
-                      .doc(user!.uid)
-                      .set({
-                    'uid': user!.uid,
-                    'enrolledAt': now,
-                    'hasPaid': true,
-                    'paymentId': paymentId,
-                    'status': 'enrolled',
-                    'name': userDoc['name'] ?? '',
-                  });
-
-                  await enrolledRef.set({
-                    'testId': widget.testId,
-                    'title': testData['title'] ?? '',
-                    'fee': amount,
-                    'hasPaid': true,
-                    'enrolledAt': now,
-                    'status': 'enrolled',
-                    'testDateTime': testData['testDateTime'],
-                    'createdBy': testData['createdBy'] ?? '',
-                    'paymentId': paymentId,
-                  });
-
-                  setState(() {});
-                },
-              );
-            },
-            child: const Text("Pay & Enroll"),
-          );
-        } else {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: isLive
-                        ? () {
-                            // context.push(
-                            //     "${AppRoutes.quizAttempt}/${widget.testId}");
-                          }
-                        : null,
-                    child: Text(isLive ? "Join Now" : "Start Test (Disabled)"),
-                  ),
-                  const SizedBox(width: 16),
-                  OutlinedButton(
-                    onPressed: () {
-                      context.push(
-                          "${AppRoutes.testLeaderborad}/${widget.testId}");
-                    },
-                    child: const Text("Leaderboard"),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Chip(
-                label: const Text("Enrolled"),
-                backgroundColor: Colors.green.shade100,
-              )
-            ],
-          );
-        }
-      },
     );
   }
 

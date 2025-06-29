@@ -19,7 +19,6 @@ class ResponsiveLayout extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        print("Current width: $width");
 
         if (width >= 1040) {
           return largeDesttop ?? Text("Hello $width");

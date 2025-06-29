@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../utils/helpers.dart';
 
 class StudentDetailsScreen extends StatelessWidget {
-   final String studentId;
+  final String studentId;
 
   const StudentDetailsScreen({super.key, required this.studentId});
 
@@ -38,11 +39,12 @@ class StudentDetailsScreen extends StatelessWidget {
     ];
 
     final joinDateStr = DateFormat.yMMMd().add_Hm().format(
-      studentData['createdAt'] as DateTime,
-    );
+          studentData['createdAt'] as DateTime,
+        );
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Student Details")),
+      appBar: UiHelpers.customAppBarForScreen(context, "Student Name",
+          automaticallyImplyLeading: true),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,8 +93,8 @@ class StudentDetailsScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final quiz = quizSubmissions[index];
                       final dateStr = DateFormat.yMMMd().add_Hm().format(
-                        quiz['submittedAt'] as DateTime,
-                      );
+                            quiz['submittedAt'] as DateTime,
+                          );
 
                       return Card(
                         margin: const EdgeInsets.symmetric(

@@ -6,15 +6,8 @@ import '../../utils/helpers.dart';
 
 class QuizAttendScreen extends StatefulWidget {
   final String quizId;
-  final String title;
-  final int durationInMinutes;
 
-  const QuizAttendScreen({
-    super.key,
-    required this.quizId,
-    required this.title,
-    required this.durationInMinutes,
-  });
+  const QuizAttendScreen({super.key, required this.quizId});
 
   @override
   State<QuizAttendScreen> createState() => _QuizAttendScreenState();
@@ -28,37 +21,157 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
   int currentIndex = 0;
 
   late Duration totalDuration;
-  late Duration remainingTime;
-  late Timer timer;
+  Duration remainingTime = Duration.zero;
+  Timer? timer;
+  bool _isSubmitted = false;
+
+  String title = "";
+  int durationInMinutes = 0;
+  bool isQuizDataLoading = true;
+  DateTime? quizEndTime;
 
   @override
   void initState() {
     super.initState();
-    totalDuration = Duration(minutes: widget.durationInMinutes);
-    remainingTime = totalDuration;
-    _startTimer();
-    _loadQuestions();
+    _loadQuizMetaAndProceed();
+  }
+
+  Future<void> _loadQuizMetaAndProceed() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quizId)
+          .get();
+
+      if (!doc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Quiz not found")),
+        );
+        return;
+      }
+
+      final data = doc.data()!;
+      title = data['title'] ?? "Quiz";
+
+      final rawDuration = data['duration'];
+      if (rawDuration is int) {
+        durationInMinutes = rawDuration;
+      } else if (rawDuration is String) {
+        durationInMinutes =
+            int.tryParse(rawDuration.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+      }
+      if (durationInMinutes == 0) throw Exception("Invalid duration");
+
+      final startRaw = data['testDateTime'];
+      if (startRaw == null) throw Exception("Quiz has no start time");
+
+      DateTime start;
+      if (startRaw is Timestamp) {
+        start = startRaw.toDate();
+      } else if (startRaw is String) {
+        start = DateTime.tryParse(startRaw) ?? DateTime.now();
+      } else {
+        throw Exception("Invalid format for testDateTime");
+      }
+
+      final now = DateTime.now();
+      quizEndTime = start.add(Duration(minutes: durationInMinutes));
+
+      if (now.isBefore(start)) {
+        final waitTime = start.difference(now);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Quiz will start in ${_formatTime(waitTime)}")),
+        );
+        setState(() => isQuizDataLoading = false);
+        return;
+      }
+
+      totalDuration = Duration(minutes: durationInMinutes);
+      remainingTime = quizEndTime!.difference(now);
+
+      if (remainingTime.inSeconds <= 0) {
+        remainingTime = Duration.zero;
+        Future.delayed(Duration.zero, () => _submitQuiz(auto: true));
+        return;
+      }
+
+      _checkAlreadySubmitted();
+      _startTimer();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading quiz: $e")),
+      );
+    } finally {
+      setState(() => isQuizDataLoading = false);
+    }
   }
 
   void _startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        if (remainingTime.inSeconds > 0) {
-          remainingTime -= const Duration(seconds: 1);
-        } else {
-          timer.cancel();
-          _submitQuiz(auto: true);
-        }
-      });
-    });
+    timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
-  @override
-  void dispose() {
-    timer.cancel();
-    _pageController.dispose();
-    super.dispose();
+  void _tick() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (quizEndTime != null && now.isBefore(quizEndTime!)) {
+      setState(() {
+        remainingTime = quizEndTime!.difference(now);
+      });
+    } else {
+      timer?.cancel();
+      _submitQuiz(auto: true);
+    }
+  }
+
+  Future<void> _checkAlreadySubmitted() async {
+    final uid = await getLoacalStorage("uid");
+
+    if (uid == null || uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User ID not found")),
+      );
+      return;
+    }
+
+    final submissionDoc = await FirebaseFirestore.instance
+        .collection('quizzes')
+        .doc(widget.quizId)
+        .collection('submissions')
+        .doc(uid)
+        .get();
+
+    if (submissionDoc.exists) {
+      _isSubmitted = true;
+      final data = submissionDoc.data()!;
+      final timeTaken = data['timeTaken'] ?? 0;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text("Already Submitted"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  "Score: ${data['score']} / ${data['selectedAnswers']?.length ?? 'N/A'}"),
+              const SizedBox(height: 8),
+              Text("Time Taken: $timeTaken seconds"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _loadQuestions();
+    }
   }
 
   Future<void> _loadQuestions() async {
@@ -68,6 +181,13 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
         .collection('questions')
         .get();
 
+    if (snapshot.docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No questions found in this quiz")),
+      );
+      return;
+    }
+
     setState(() {
       questions =
           snapshot.docs.map((doc) => {"id": doc.id, ...doc.data()}).toList();
@@ -75,64 +195,93 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
     });
   }
 
-  void _selectOption(String questionId, String option) {
-    setState(() {
-      selectedAnswers[questionId] = option;
-    });
-  }
-
   Future<void> _submitQuiz({bool auto = false}) async {
-    timer.cancel();
+    if (_isSubmitted) return;
+    _isSubmitted = true;
+    timer?.cancel();
 
     final uid = await getLoacalStorage("uid");
-    int score = 0;
 
+    if (uid == null || uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User ID not found")),
+      );
+      return;
+    }
+
+    int score = 0;
     for (var q in questions) {
       final correct = q["correctAnswer"] ?? '';
       final selected = selectedAnswers[q["id"]] ?? '';
       if (selected == correct) score++;
     }
 
-    await FirebaseFirestore.instance
-        .collection('quizzes')
-        .doc(widget.quizId)
-        .collection('submissions')
-        .doc(uid)
-        .set({
-      "selectedAnswers": selectedAnswers,
-      "score": score,
-      "timeTaken": totalDuration.inSeconds - remainingTime.inSeconds,
-      "title": widget.title,
-      "duration": widget.durationInMinutes,
-    });
+    final timeTaken = (totalDuration.inSeconds - remainingTime.inSeconds)
+        .clamp(0, totalDuration.inSeconds);
 
-    if (!mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('quizzes')
+          .doc(widget.quizId)
+          .collection('submissions')
+          .doc(uid)
+          .set({
+        "selectedAnswers": selectedAnswers,
+        "score": score,
+        "timeTaken": timeTaken,
+        "title": title,
+        "duration": durationInMinutes,
+        "submittedAt": FieldValue.serverTimestamp(),
+      });
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Text(auto ? "Time's Up!" : "Quiz Submitted"),
-        content: Text("Score: $score / ${questions.length}"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: Text(auto ? "Time's Up!" : "Quiz Submitted"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Score: $score / ${questions.length}"),
+              const SizedBox(height: 8),
+              Text("Time Taken: $timeTaken seconds"),
+            ],
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Submission failed: $e")),
+      );
+    }
   }
 
   String _formatTime(Duration d) {
+    final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    return hours > 0 ? "$hours:$minutes:$seconds" : "$minutes:$seconds";
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
+    if (isQuizDataLoading || loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -142,11 +291,29 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
     final attempted = selectedAnswers.length;
 
     return WillPopScope(
-      onWillPop: () async => false,
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Exit Quiz?"),
+            content:
+                const Text("Your progress will be lost. Do you want to leave?"),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Cancel")),
+              TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Leave")),
+            ],
+          ),
+        );
+        return shouldExit ?? false;
+      },
       child: Scaffold(
         appBar: UiHelpers.customAppBarForScreen(
           context,
-          widget.title,
+          title,
           actions: [
             Row(
               children: [
@@ -157,34 +324,34 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(width: 12),
-                if (selectedAnswers.length == questions.length)
-                  TextButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Confirm Submission"),
-                          content:
-                              const Text("Are you sure you want to submit?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Cancel"),
+                TextButton(
+                  onPressed: _isSubmitted
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text("Confirm Submission"),
+                              content: const Text(
+                                  "Are you sure you want to submit the quiz?"),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("Cancel")),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _submitQuiz();
+                                  },
+                                  child: const Text("Submit"),
+                                ),
+                              ],
                             ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _submitQuiz();
-                              },
-                              child: const Text("Submit"),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    child: const Text("Submit",
-                        style: TextStyle(color: Colors.white)),
-                  ),
+                          );
+                        },
+                  child: const Text("Submit",
+                      style: TextStyle(color: Colors.white)),
+                ),
               ],
             ),
           ],
@@ -195,7 +362,7 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
               LinearProgressIndicator(
                 value: (currentIndex + 1) / questions.length,
                 backgroundColor: Colors.grey.shade300,
-                valueColor: AlwaysStoppedAnimation(Colors.deepPurple),
+                valueColor: const AlwaysStoppedAnimation(Colors.deepPurple),
                 minHeight: 6,
               ),
               Padding(
@@ -215,18 +382,15 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Q${currentIndex + 1}. ${currentQ["questionText"]}",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Text("Q${currentIndex + 1}. ${currentQ["questionText"]}",
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       ...options.map((opt) {
                         final isSelected = selected == opt;
                         return GestureDetector(
-                          onTap: () => _selectOption(currentQ["id"], opt),
+                          onTap: () => setState(
+                              () => selectedAnswers[currentQ["id"]] = opt),
                           child: Container(
                             margin: const EdgeInsets.symmetric(vertical: 6),
                             padding: const EdgeInsets.symmetric(
@@ -246,13 +410,12 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
                             child: Row(
                               children: [
                                 Icon(
-                                  isSelected
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_off,
-                                  color: isSelected
-                                      ? Colors.deepPurple
-                                      : Colors.grey,
-                                ),
+                                    isSelected
+                                        ? Icons.radio_button_checked
+                                        : Icons.radio_button_off,
+                                    color: isSelected
+                                        ? Colors.deepPurple
+                                        : Colors.grey),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
@@ -277,28 +440,14 @@ class _QuizAttendScreenState extends State<QuizAttendScreen> {
                         children: [
                           if (currentIndex > 0)
                             ElevatedButton(
-                              onPressed: () {
-                                setState(() => currentIndex--);
-                                _pageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.ease,
-                                );
-                              },
-                              child: const Text("Previous"),
-                            ),
+                                onPressed: () => setState(() => currentIndex--),
+                                child: const Text("Previous")),
                           if (currentIndex < questions.length - 1)
                             ElevatedButton(
-                              onPressed: () {
-                                setState(() => currentIndex++);
-                                _pageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.ease,
-                                );
-                              },
-                              child: const Text("Next"),
-                            ),
+                                onPressed: () => setState(() => currentIndex++),
+                                child: const Text("Next")),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),

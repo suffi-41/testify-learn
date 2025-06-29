@@ -1,13 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../services/firebase_service.dart';
-
-// // redux
-// import 'package:flutter_redux/flutter_redux.dart';
-// import '../../redux/actions/auth_actions.dart';
-// import '../../models/root_state.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,71 +10,139 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  double _opacity = 0.0;
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  double _logoOpacity = 0.0;
+  double _textOffset = 40.0;
   Timer? _timer;
-  StreamSubscription<User?>? _authSubscription;
+  late AnimationController _bgAnimationController;
+
+  // ✅ Image logic for web and app
+  ImageProvider getLogoImage() {
+    if (kIsWeb) {
+      return const AssetImage("assets/images/testify_learn.gif");
+    } else {
+      return const AssetImage("assets/images/testify_learn.webp");
+    }
+  }
 
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) setState(() => _opacity = 1.0);
-    });
+    _bgAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
 
-    // final store = StoreProvider.of<RootState>(context, listen: false);
-
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
-      User? user,
-    ) async {
-      if (user != null) {
-        final role = await getUserRole(user.uid.toString());
-
-        /// ✅ Dispatch LoginSuccess to Redux
-        // store.dispatch(
-        //   AuthSuccess(user.uid, role.toString()),
-        // ); // or get role from Firestore
-      } else {
-        /// ✅ Dispatch LogoutAction to Redux
-        // store.dispatch(LogoutRequestAction());
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _logoOpacity = 1.0;
+          _textOffset = 0.0;
+        });
       }
     });
 
-    _timer?.cancel();
-    _timer = Timer(const Duration(seconds: 2), () {
-      if (mounted) context.go("/");
+    _timer = Timer(const Duration(seconds: 5), () {
+      if (mounted) context.go('/');
     });
   }
 
   @override
   void dispose() {
-    _authSubscription?.cancel();
+    _timer?.cancel();
+    _bgAnimationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Center(
-        child: AnimatedOpacity(
-          opacity: _opacity,
-          duration: const Duration(seconds: 2),
-          curve: Curves.easeInOut,
-          child: Hero(
-            tag: 'app-logo',
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              child: Image.asset(
-                "assets/images/app_logo.jpg",
-                width: 120,
-                height: 120,
+    final scheme = Theme.of(context).colorScheme;
+
+    final colorAnimation1 = ColorTween(
+      begin: scheme.primary.withOpacity(0.6),
+      end: scheme.secondary.withOpacity(0.6),
+    ).animate(_bgAnimationController);
+
+    final colorAnimation2 = ColorTween(
+      begin: scheme.surface.withOpacity(0.6),
+      end: scheme.background.withOpacity(0.6),
+    ).animate(_bgAnimationController);
+
+    return AnimatedBuilder(
+      animation: _bgAnimationController,
+      builder: (context, child) {
+        return Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorAnimation1.value ?? scheme.primary,
+                  colorAnimation2.value ?? scheme.background,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedOpacity(
+                    opacity: _logoOpacity,
+                    duration: const Duration(seconds: 2),
+                    child: Hero(
+                      tag: 'app-logo',
+                      child: Container(
+                        width: 130,
+                        height: 130,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.25),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image(
+                            image: getLogoImage(),
+                            fit: BoxFit.cover,
+                            width: 130,
+                            height: 130,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 800),
+                    transform: Matrix4.translationValues(0, _textOffset, 0),
+                    curve: Curves.easeOut,
+                    child: Text(
+                      "Testify Learn",
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  const CircularProgressIndicator(color: Colors.white),
+                ],
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

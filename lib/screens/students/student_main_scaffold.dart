@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:testify_learn_application/constants/app_routes.dart';
 import '../../utils/responsive.dart';
-import '../../widgets/student_drawer.dart';
+import './widgets/student_drawer.dart';
 
 class StudentMainScaffold extends StatelessWidget {
   final Widget child;
@@ -31,7 +31,6 @@ class StudentMainScaffold extends StatelessWidget {
           ],
         ),
       ),
-
       bottomNavigationBar: ResponsiveLayout(
         mobile: _bottomNaviagationBar(context),
         tablet: Container(
@@ -46,7 +45,6 @@ class StudentMainScaffold extends StatelessWidget {
             ],
           ),
         ),
-
         desktop: SizedBox(child: null),
         largeDesttop: SizedBox(child: null),
       ),
@@ -63,8 +61,7 @@ class StudentMainScaffold extends StatelessWidget {
       index = 2;
     else if (location.startsWith(AppRoutes.studentProfile))
       index = 4;
-    else if (location.startsWith(AppRoutes.studentWallet))
-      index = 3;
+    else if (location.startsWith(AppRoutes.studentWallet)) index = 3;
     return BottomNavigationBar(
       currentIndex: index,
       onTap: (value) {
